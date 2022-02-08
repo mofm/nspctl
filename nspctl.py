@@ -1,6 +1,8 @@
 import logging
 import os
 import re
+import functools
+import shutil
 
 from nspctl.utils.systemd import systemd_booted, systemd_version
 from nspctl.utils.platform import is_linux
@@ -38,9 +40,18 @@ def _sd_version():
     return systemd_version()
 
 
-def _ensure_exists(name):
-    if not exists(name):
-        return "Container '{}' does not exist".format(name)
+def _ensure_exists(wrapped):
+    """
+    Decorator to ensure that the named container exists
+    """
+
+    @functools.wraps(wrapped)
+    def check_exits(name, *args, **kwargs):
+        if not exists(name):
+            raise ("Container '{}' does not exist".format(name))
+        return wrapped(name, *args, **clean_kwargs(**kwargs))
+
+    return check_exits
 
 
 def _root(name="", all_roots=False):
@@ -178,6 +189,7 @@ def _machinectl(cmd):
     return run_cmd("{} {}".format(prefix, cmd), is_shell=True)
 
 
+@_ensure_exists
 def _run(
     name,
     cmd,
@@ -215,6 +227,7 @@ def _run(
         return ret
 
 
+@_ensure_exists
 def con_pid(name):
     """
     Returns the PID of a container
@@ -306,6 +319,7 @@ def retcode(
     )
 
 
+@_ensure_exists
 def state(name):
     """
     Return state of container (running or stopped)
@@ -380,6 +394,7 @@ def info(name, **kwargs):
     return ret
 
 
+@_ensure_exists
 def start(name):
     """
     Start the named container
@@ -396,6 +411,7 @@ def start(name):
     return True
 
 
+@_ensure_exists
 def stop(name, kill=False):
     """
     This is a compatibility function which provides the logic for
@@ -413,5 +429,91 @@ def stop(name, kill=False):
 
     if ret["returncode"] != 0:
         return False
+
+    return True
+
+
+def poweroff(name):
+    """
+    A clean shutdown to the container
+    """
+    return stop(name, kill=False)
+
+
+def terminate(name):
+    """
+    Kill all processes in the container. Not a clean shutdown.
+    """
+    return stop(name, kill=True)
+
+
+@_ensure_exists
+def enable(name):
+    """
+    Set the named container to be launched at boot
+    """
+    cmd = "systemctl enable systemd-nspawn@{}".format(name)
+    if run_cmd(cmd, is_shell=True)["returncode"] != 0:
+        return False
+
+    return True
+
+
+@_ensure_exists
+def disable(name):
+    """
+    Set the named container disable at boot
+    """
+    cmd = "systemctl disable systemd-nspawn@{}".format(name)
+    if run_cmd(cmd, is_shell=True)["returncode"] != 0:
+        return False
+
+    return True
+
+
+@_ensure_exists
+def reboot(name):
+    """
+    reboot the container
+    """
+    if _sd_version() >= 219:
+        if state(name) == "running":
+            ret = _machinectl("reboot {}".format(name))
+        else:
+            return start(name)
+    else:
+        cmd = "systemctl stop systemd-nspawn@{}".format(name)
+        ret = run_cmd(cmd, is_shell=True)
+        if ret["returncode"] != 0:
+            return False
+        cmd = "systemctl start systemd-nspawn@{}".format(name)
+        ret = run_cmd(cmd, is_shell=True)
+
+    if ret["returncode"] != 0:
+        return False
+
+    return True
+
+
+@_ensure_exists
+def remove(name, stop=False):
+    """
+    Remove the named container
+    """
+    if not stop and state(name) != "stopped":
+        raise Exception("Cantainer '{}' is not stopped".format(name))
+
+    def _failed_remove(name, exc):
+        raise Exception("Unable to remove container '{}': '{}'".format(name, exc))
+
+    if _sd_version() >= 219:
+        ret = _machinectl("remove {}".format(name))
+        if ret["returncode"] != 0:
+            _failed_remove(name, ret["stderr"])
+    else:
+        try:
+            shutil.rmtree(os.path.join(_root(), name))
+        except OSError as exc:
+            _failed_remove(name, exc)
 
     return True
