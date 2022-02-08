@@ -8,7 +8,7 @@ from nspctl.utils.systemd import systemd_booted, systemd_version
 from nspctl.utils.platform import is_linux
 from nspctl.utils.cmd import run_cmd
 from nspctl.utils.args import invalid_kwargs, clean_kwargs
-from nspctl.utils.container_cmd import cont_run
+from nspctl.utils.container_cmd import cont_run, copy_to
 
 logger = logging.getLogger(__name__)
 
@@ -517,3 +517,29 @@ def remove(name, stop=False):
             _failed_remove(name, exc)
 
     return True
+
+
+@_ensure_exists
+def con_copy(name, source, dest, overwrite=False, makedirs=False):
+    """
+    Copy a file from host in to a container
+    """
+    pid = con_pid(name)
+    orig_state = state(name)
+    if _sd_version() >= 219:
+        ret = _machinectl("copy-to {} {} '{}'".format(name, source, dest))
+        if ret["returncode"] != 0:
+            raise Exception("Failed to copying file/s")
+        else:
+            return ret
+    else:
+        ret = copy_to(
+            pid,
+            source,
+            dest,
+            state=orig_state,
+            exec_driver=EXEC_DRIVER,
+            overwrite=overwrite,
+            makedirs=makedirs,
+        )
+        return ret

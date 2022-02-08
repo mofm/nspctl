@@ -60,13 +60,7 @@ def cont_run(
     keep_env=None,
 ):
     """
-    :param cmd:
-    :param container_type:
-    :param exec_driver:
-    :param keep_env:
-    :param pid:
-    :param is_shell:
-    :return:
+    Common logic function for running containers
     """
 
     if keep_env is None or isinstance(keep_env, bool):
@@ -102,3 +96,74 @@ def cont_run(
     )
 
     return proc
+
+
+@_validate
+def copy_to(
+        pid,
+        source,
+        dest,
+        state,
+        container_type=None,
+        exec_driver=None,
+        overwrite=False,
+        makedirs=False,
+):
+    """
+    Common logic copying files to containers
+    """
+    if state != "running":
+        raise Exception("Container is not running")
+
+    source_dir, source_name = os.path.split(source)
+
+    if not os.path.isabs(source):
+        raise Exception("Source path must be absolute")
+    elif not os.path.exists(source):
+        raise Exception("Source file {} does not exist".format(source))
+    elif not os.path.isfile(source):
+        raise Exception("Source must be regular file")
+
+    if not os.path.isabs(dest):
+        raise Exception("Destination path must be absolute")
+    if (
+        cont_run(pid, "test -d {}".format(dest), exec_driver=exec_driver, is_shell=True)["returncode"]
+        == 0
+    ):
+        dest = os.path.join(dest, source_name)
+    else:
+        dest_dir, dest_name = os.path.split(dest)
+        if (
+            cont_run(pid, "test -d {}".format(dest_dir), exec_driver=exec_driver, is_shell=True)["returncode"]
+            != 0
+        ):
+            if makedirs:
+                res = cont_run(pid, "mkdir -p {}".format(dest_dir), exec_driver=exec_driver, is_shell=True)
+                if res["returncode"] != 0:
+                    error = (
+                        "Unable to create destination directory {} "
+                        "in container".format(dest_dir)
+                    )
+                    if res["stderr"]:
+                        error += ": {}".format(res["stderr"])
+                    raise Exception(error)
+            else:
+                raise Exception("Directory does not exist in container")
+
+    if (
+        not overwrite and
+        cont_run(pid, "test -e {}".format(dest), exec_driver=exec_driver, is_shell=True)["returncode"]
+        == 0
+    ):
+        raise Exception(
+            "Destination path {} already exists. Use overwrite=True to "
+            "overwrite it".format(dest)
+        )
+
+    if exec_driver == "nsenter":
+        copy_cmd = 'cat "{}" | {} env -i {} tee "{}"'.format(
+            source, _nsenter(pid), PATH, dest)
+        if copy_cmd != os.EX_OK:
+            raise Exception("failed copying file!")
+        else:
+            return "copy command completed"
