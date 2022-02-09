@@ -3,7 +3,7 @@ import os
 import pipes
 import functools
 
-from nspctl.utils.cmd import run_cmd
+from nspctl.utils.cmd import run_cmd, popen
 from nspctl.utils.args import clean_kwargs
 
 logger = logging.getLogger(__name__)
@@ -200,3 +200,21 @@ def con_init(
         return True
     else:
         return False
+
+
+@_validate
+def login_shell(
+        pid,
+        container_type=None,
+        exec_driver=None,
+        is_shell=None,
+):
+    """
+    Common login shell function
+    """
+    if exec_driver == "nsenter":
+        shell_cmd = "/bin/sh -l"
+        full_cmd = "{} env -i {}".format(_nsenter(pid), shell_cmd)
+        popen(full_cmd, is_shell=is_shell)
+    else:
+        raise Exception("no valid exec_driver")

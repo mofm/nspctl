@@ -3,6 +3,9 @@ import shlex
 
 
 def run_cmd(cmd, is_shell, cwd=None):
+    """
+    Execute command on the given shell
+    """
     assert is_shell is not None, "is_shell param must exist"
 
     if is_shell:
@@ -27,3 +30,25 @@ def run_cmd(cmd, is_shell, cwd=None):
                    )
     }
     return cmd_output
+
+
+def popen(cmd, is_shell, cwd=None):
+    """
+    subprocess Popen function
+    """
+    assert is_shell is not None, "is_shell param must exist"
+    if is_shell:
+        args = cmd
+    else:
+        args = shlex.split(cmd)
+
+    try:
+        proc = subprocess.Popen(
+            '{}'.format(args),
+            shell=is_shell,
+            cwd=cwd,
+            universal_newlines=True
+        )
+        out, err = proc.communicate()
+    except OSError as e:
+        raise e

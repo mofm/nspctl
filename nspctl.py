@@ -6,9 +6,9 @@ import shutil
 
 from nspctl.utils.systemd import systemd_booted, systemd_version
 from nspctl.utils.platform import is_linux
-from nspctl.utils.cmd import run_cmd
+from nspctl.utils.cmd import run_cmd, popen
 from nspctl.utils.args import invalid_kwargs, clean_kwargs
-from nspctl.utils.container_cmd import cont_run, copy_to, con_init
+from nspctl.utils.container_resource import cont_run, copy_to, con_init, login_shell
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ def _ensure_exists(wrapped):
     @functools.wraps(wrapped)
     def check_exits(name, *args, **kwargs):
         if not exists(name):
-            raise ("Container '{}' does not exist".format(name))
+            raise Exception("Container '{}' does not exist".format(name))
         return wrapped(name, *args, **clean_kwargs(**kwargs))
 
     return check_exits
@@ -540,8 +540,6 @@ def con_copy(name, source, dest, overwrite=False, makedirs=False):
     """
     Copy a file from host in to a container
     """
-    pid = con_pid(name)
-    orig_state = state(name)
     if _ensure_consystemd(name) is True:
         ret = _machinectl("copy-to {} {} '{}'".format(name, source, dest))
         if ret["returncode"] != 0:
@@ -549,6 +547,8 @@ def con_copy(name, source, dest, overwrite=False, makedirs=False):
         else:
             return ret
     else:
+        orig_state = state(name)
+        pid = con_pid(name)
         ret = copy_to(
             pid,
             source,
@@ -560,3 +560,22 @@ def con_copy(name, source, dest, overwrite=False, makedirs=False):
             makedirs=makedirs,
         )
         return ret
+
+
+@_ensure_exists
+def shell(name):
+    """
+    login container shell
+    """
+    _ensure_running(name)
+    if _ensure_consystemd(name) is True:
+        cmd = "machinectl shell '{}'".format(name)
+        ret = popen(cmd, is_shell=True)
+    else:
+        pid = con_pid(name)
+        ret = login_shell(
+            pid,
+            container_type=__virtualname__,
+            exec_driver=EXEC_DRIVER,
+            is_shell=True,
+        )
