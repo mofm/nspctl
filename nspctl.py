@@ -8,7 +8,7 @@ from nspctl.utils.systemd import systemd_booted, systemd_version
 from nspctl.utils.platform import is_linux
 from nspctl.utils.cmd import run_cmd
 from nspctl.utils.args import invalid_kwargs, clean_kwargs
-from nspctl.utils.container_cmd import cont_run, copy_to
+from nspctl.utils.container_cmd import cont_run, copy_to, con_init
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +122,24 @@ def _ensure_systemd(version):
         return "This function requires systemd >= {} (Detected version: {}).".format(
                 version, installed
             )
+
+
+@_ensure_exists
+def _ensure_consystemd(name):
+    """
+    Detect container init systems:
+    systemd or other init systems
+    """
+    orig_state = state(name)
+    pid = con_pid(name)
+    return con_init(
+        pid,
+        state=orig_state,
+        container_type=__virtualname__,
+        exec_driver=EXEC_DRIVER,
+        is_shell=True,
+        keep_env=True,
+    )
 
 
 def list_all():
@@ -327,7 +345,7 @@ def state(name):
     try:
         cmd = "show {} --property=State".format(name)
         return _machinectl(cmd)["stdout"].split("=")[-1]
-    except IndexError:
+    except AttributeError:
         return "stopped"
 
 
@@ -417,15 +435,17 @@ def stop(name, kill=False):
     This is a compatibility function which provides the logic for
     poweroff and terminate.
     """
-    if _sd_version() >= 219:
+    if _ensure_consystemd(name) is True:
         if kill:
             action = "terminate"
         else:
             action = "poweroff"
         ret = _machinectl("{} {}".format(action, name))
     else:
-        cmd = "systemctl stop systemd-nspawn@{}".format(name)
-        ret = run_cmd(cmd, is_shell=True)
+        # systemd-nspawn does not stop another init system.
+        # or "systemctl stop" command gives timeout.
+        cmd = "poweroff"
+        ret = run(name, cmd)
 
     if ret["returncode"] != 0:
         return False
@@ -476,18 +496,14 @@ def reboot(name):
     """
     reboot the container
     """
-    if _sd_version() >= 219:
-        if state(name) == "running":
+    if state(name) == "running":
+        if _ensure_consystemd(name) is True:
             ret = _machinectl("reboot {}".format(name))
         else:
-            return start(name)
+            cmd = "reboot"
+            ret = run(name, cmd)
     else:
-        cmd = "systemctl stop systemd-nspawn@{}".format(name)
-        ret = run_cmd(cmd, is_shell=True)
-        if ret["returncode"] != 0:
-            return False
-        cmd = "systemctl start systemd-nspawn@{}".format(name)
-        ret = run_cmd(cmd, is_shell=True)
+        return start(name)
 
     if ret["returncode"] != 0:
         return False
@@ -526,7 +542,7 @@ def con_copy(name, source, dest, overwrite=False, makedirs=False):
     """
     pid = con_pid(name)
     orig_state = state(name)
-    if _sd_version() >= 219:
+    if _ensure_consystemd(name) is True:
         ret = _machinectl("copy-to {} {} '{}'".format(name, source, dest))
         if ret["returncode"] != 0:
             raise Exception("Failed to copying file/s")
@@ -538,6 +554,7 @@ def con_copy(name, source, dest, overwrite=False, makedirs=False):
             source,
             dest,
             state=orig_state,
+            container_type=__virtualname__,
             exec_driver=EXEC_DRIVER,
             overwrite=overwrite,
             makedirs=makedirs,

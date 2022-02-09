@@ -167,3 +167,36 @@ def copy_to(
             raise Exception("failed copying file!")
         else:
             return "copy command completed"
+
+
+@_validate
+def con_init(
+        pid,
+        state,
+        container_type=None,
+        exec_driver=None,
+        is_shell=None,
+        keep_env=None,
+):
+    """
+    Detect container init systems
+    """
+    if state != "running":
+        raise Exception("Container is not running")
+
+    cmd = "stat /run/systemd/system"
+
+    if (
+        cont_run(
+            pid,
+            cmd,
+            container_type=container_type,
+            exec_driver=exec_driver,
+            is_shell=is_shell,
+            keep_env=keep_env
+        )["returncode"]
+        == 0
+    ):
+        return True
+    else:
+        return False
