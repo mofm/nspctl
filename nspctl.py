@@ -579,3 +579,89 @@ def shell(name):
             exec_driver=EXEC_DRIVER,
             is_shell=True,
         )
+
+
+def _pull_image(img_type, image, name, **kwargs):
+    """
+    Common logic function for pulling images
+    """
+    _ensure_systemd(219)
+    if exists(name):
+        raise Exception("Container '{}' already exists".format(name))
+    if img_type in ("raw", "tar"):
+        valid_kwargs = ("verify",)
+    elif img_type == "dkr":
+        valid_kwargs = ("index",)
+    else:
+        raise Exception("Unsupported image type '{}'".format(img_type))
+
+    kwargs = clean_kwargs(**kwargs)
+    bad_kwargs = {
+        x: y
+        for x, y in clean_kwargs(**kwargs).items()
+        if x not in valid_kwargs
+    }
+
+    if bad_kwargs:
+        invalid_kwargs(bad_kwargs)
+
+    pull_opt = []
+    if img_type in ("raw", "tar"):
+        verify = kwargs.get("verify", False)
+        if not verify:
+            pull_opt.append("--verify=no")
+        else:
+
+            def _bad_verify():
+                raise Exception(
+                    "'verify' must be one of the following: signature, checksum"
+                )
+
+            try:
+                verify = verify.lower()
+            except AttributeError:
+                _bad_verify()
+            else:
+                if verify not in ("signature", "checksum"):
+                    _bad_verify()
+                pull_opt.append("--verify={}".format(verify))
+
+    elif img_type == "dkr":
+        if "index" in kwargs:
+            pull_opt.append("--dkr-index-url={}".format(kwargs["index"]))
+
+    cmd = "pull-{} {} {} {}".format(img_type, " ".join(pull_opt), image, name)
+    ret = _machinectl(cmd)
+    if ret["returncode"] != 0:
+        msg = (
+            "Error occurred while pulling image. Stderr from the pull command"
+            "(if any) follows:"
+        )
+        if ret["stderr"]:
+            msg += "\n\n{}".format(ret["stderr"])
+        raise Exception(msg)
+    return True
+
+
+def pull_raw(url, name, verify=False):
+    """
+    Execute a ``machinectl pull-raw`` to download a .qcow2 or raw disk image,
+    and add it to /var/lib/machines as a new container.
+    """
+    return _pull_image("raw", url, name, verify=verify)
+
+
+def pull_tar(url, name, verify=False):
+    """
+    Execute a ``machinectl pull-tar`` to download a .tar container image,
+    and add it to /var/lib/machines as a new container.
+    """
+    return _pull_image("tar", url, name, verify=verify)
+
+
+def pull_docker(url, name, index):
+    """
+    Execute a ``machinectl pull-dkr`` to download a docker image and add it to
+    /var/lib/machines as a new container.
+    """
+    return _pull_image("dkr", url, name, index=index)
