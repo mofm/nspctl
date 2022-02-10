@@ -18,9 +18,9 @@ nspctl supports containers with any init system. nspctl provides almost all of t
 
 * Lists
 
-    - running containers
-    - stopped containers
-    - all containers
+  - running containers
+  - stopped containers
+  - all containers
 
 * Containers info
 * Containers status
