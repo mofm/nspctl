@@ -1,14 +1,17 @@
 import logging
 import os
 import re
-import subprocess
 
-import nspctl.utils.path
+from nspctl.utils.path import which
+from nspctl.utils.cmd import run_cmd
 
 logger = logging.getLogger(__name__)
 
 
 def systemd_booted():
+    """
+    Check if systemd is booted
+    """
     try:
         sdb = bool(os.stat("/run/systemd/system"))
     except OSError:
@@ -18,20 +21,22 @@ def systemd_booted():
 
 
 def systemd_offline():
-    sdb = not systemd_booted() and nspctl.utils.path.which("systemctl")
-    return sdb
+    """
+    Check if systemd is offline
+    """
+    sdo = not systemd_booted() and which("systemctl")
+    return sdo
 
 
 def systemd_version():
-    stdout = subprocess.Popen(
-        ["systemctl", "--version"],
-        close_fds=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    ).communicate()[0]
+    """
+    Return systemd version
+    """
+    cmd = "systemctl --version"
+    stdout = run_cmd(cmd, is_shell=True)["stdout"]
     outstr = str(stdout)
     try:
-        sdb = int(re.search(r"\w+ ([0-9]+)", outstr.splitlines()[0]).group(1))
+        sdv = int(re.search(r"\w+ ([0-9]+)", outstr.splitlines()[0]).group(1))
     except (AttributeError, IndexError, ValueError):
         logger.error(
             "Unable to determine systemd version from systemctl "
@@ -40,4 +45,4 @@ def systemd_version():
         )
         return None
 
-    return sdb
+    return sdv
