@@ -1,3 +1,4 @@
+import errno
 import logging
 import os
 import re
@@ -9,6 +10,7 @@ from nspctl.utils.platform import is_linux
 from nspctl.utils.cmd import run_cmd, popen
 from nspctl.utils.args import invalid_kwargs, clean_kwargs
 from nspctl.utils.container_resource import cont_run, copy_to, con_init, login_shell
+from nspctl.utils.path import which
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +92,122 @@ def _make_container_root(name):
             raise exc(
                 "Unable to make container root directory {}: {}".format(name, exc)
             )
+
+
+def _build_failed(dest, name):
+    """
+    build failed function
+    """
+    try:
+        shutil.rmtree(dest)
+    except OSError as exc:
+        if exc.errno != errno.ENOENT:
+            raise Exception(
+                "Unable to cleanup container root directory {}".format(dest)
+            )
+    raise Exception("Container {} failed to build".format(name))
+
+
+def _bootstrap_arch(name, **kwargs):
+    """
+    Bootstrap an Arch Linux container
+    """
+    if not which("pacstrap"):
+        raise Exception(
+            "pacstrap not found, is the arch-install-scripts package installed?"
+        )
+    dest = _make_container_root(name)
+    cmd = "pacstrap -c -d {} base".format(dest)
+    ret = run_cmd(cmd, is_shell=True)
+    if ret["returncode"] != 0:
+        _build_failed(dest, name)
+    return ret
+
+
+def _bootstrap_debian(name, **kwargs):
+    """
+    Bootstrap a Debian Linux container
+    """
+    if not which("debootstrap"):
+        raise Exception(
+            "debootstrap not found, is the debootstrap package installed?"
+        )
+
+    version = kwargs.get("version", False)
+    if not version:
+        version = "stable"
+
+    releases = [
+        "jessie",
+        "stretch",
+        "buster",
+        "bullseye",
+        "stable",
+    ]
+    if version not in releases:
+        raise Exception(
+            'Unsupported Debian version "{}". '
+            'Only "stable" or "jessie" and newer are supported'.format(version)
+        )
+
+    dest = _make_container_root(name)
+    cmd = "debootstrap --arch=amd64 {} {}".format(version, dest)
+    ret = run_cmd(cmd, is_shell=True)
+    if ret["returncode"] != 0:
+        _build_failed(dest, name)
+    return ret
+
+
+def _bootstrap_ubuntu(name, **kwargs):
+    """
+    Bootstrap a Ubuntu Linux container
+    """
+    if not which("debootstrap"):
+        raise Exception(
+            "debootstrap not found, is the debootstrap package installed?"
+        )
+
+    version = kwargs.get("version", False)
+    if not version:
+        version = "focal"
+
+    releases = [
+        "xenial",
+        "bionic",
+        "focal",
+    ]
+    if version not in releases:
+        raise Exception(
+            'Unsupported Ubuntu version "{}". '
+            '"xenial" and newer are supported'.format(version)
+        )
+
+    dest = _make_container_root(name)
+    cmd = "debootstrap --arch=amd64 {} {}".format(version, dest)
+    ret = run_cmd(cmd, is_shell=True)
+    if ret["returncode"] != 0:
+        _build_failed(dest, name)
+    return ret
+
+
+def bootstrap_container(name, dist=None, version=None):
+    """
+    Bootstrap a container from package servers
+    """
+    distro = [
+        "debian",
+        "ubuntu",
+        "arch",
+    ]
+
+    if dist not in distro and dist is None:
+        raise Exception(
+            'Unsupported distribution "{}"'.format(dist)
+        )
+    try:
+        return globals()["_bootstrap_{}".format(dist)](name, version=version)
+    except KeyError:
+        raise Exception('Unsupported distribution "{}"'.format(dist))
 
 
 def _ensure_running(name):

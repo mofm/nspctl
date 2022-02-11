@@ -33,6 +33,9 @@ nspctl supports containers with any init system. nspctl provides almost all of t
 * Copy files from host in to a container
 * Login the container shell
 * Pull and register containers(raw, tar and docker images)
+* Bootstrap **Debian** container ("jessie" and newer are supported)
+* Bootstrap **Ubuntu** container ("xenial" and newer are supported)
+* Bootstrap **Arch Linux** container
 
 
 Roadmap
