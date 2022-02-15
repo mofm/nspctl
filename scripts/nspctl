@@ -1,1 +1,24 @@
 #! /usr/bin/env python
+
+import argparse
+from nspctl.lib import main
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest='subcommand')
+
+    nsp = main.NspctlCmd()
+
+    for (cmd_name, cmd_func) in list(main.command.all.items()):
+        func = getattr(nsp, cmd_name)
+        func(subparsers=subparsers)
+
+    args = parser.parse_args()
+    nsp.setup_parser(parser)
+
+    args_map = vars(args)
+
+    nsp.action(args_map)
+    rev = nsp.get_result()
+
+    print(rev)

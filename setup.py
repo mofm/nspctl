@@ -21,7 +21,7 @@ classifiers = [
 setup(
     name='nspctl',
     version=nspctl.__version__,
-    packages=['nspctl', 'nspctl.utils'],
+    packages=['nspctl', 'nspctl.utils', 'nspctl.lib'],
     url='https://github.com/mofm/nspctl',
     license='GPLv3',
     author='Emre Eryilmaz',
