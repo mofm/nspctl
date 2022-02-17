@@ -1,3 +1,5 @@
+import json
+
 _styles = {}
 """Maps style class to tuple of attribute names."""
 
@@ -106,16 +108,23 @@ codes["0xAAAA00"] = codes["brown"]
 codes["darkyellow"] = codes["0xAAAA00"]
 
 # styles
-_styles["BAD"] = ("red",)
-_styles["BRACKET"] = ("blue",)
-_styles["ERR"] = ("red",)
-_styles["GOOD"] = ("green",)
-_styles["HILITE"] = ("teal",)
-_styles["INFO"] = ("darkgreen",)
-_styles["LOG"] = ("green",)
-_styles["NORMAL"] = ("normal",)
-_styles["QAWARN"] = ("brown",)
-_styles["WARN"] = ("yellow",)
+_styles["BAD"] = ("red", )
+_styles["BRACKET"] = ("blue", )
+_styles["ERR"] = ("red", )
+_styles["GOOD"] = ("green", )
+_styles["HILITE"] = ("teal", )
+_styles["INFO"] = ("darkgreen", )
+_styles["LOG"] = ("green", )
+_styles["NORMAL"] = ("normal", )
+_styles["QAWARN"] = ("brown", )
+_styles["WARN"] = ("yellow", )
+
+
+def resetcolor():
+    """
+    Reset the color code
+    """
+    return codes["reset"]
 
 
 def style_to_ansi_code(style):
@@ -127,6 +136,16 @@ def style_to_ansi_code(style):
     for attr_name in _styles[style]:
         ret += codes.get(attr_name, attr_name)
     return ret
+
+
+def colormap():
+    """
+    Create new colormap
+    """
+    mycolors = []
+    for c in ("GOOD", "WARN", "BAD", "HILITE", "BRACKET", "NORMAL"):
+        mycolors.append("%s=$'%s'" % (c, style_to_ansi_code(c)))
+    return "\n".join(mycolors)
 
 
 def colorize(color_key, text):
@@ -170,5 +189,98 @@ class CreateColor:
         return colorize(self._color_key, text)
 
 
+# create dynamically colorize
 for c in compat_functions_colors:
     globals()[c] = CreateColor(c)
+
+
+class NspctlOutput(object):
+    """
+    This is Nspctl output object
+    """
+
+    def __init__(self):
+        self.new_msg = None
+
+    def pprint(self, msg):
+        self._repr(msg)
+        return self.new_msg
+
+    def _list_to_str(self, msg):
+        """
+        Converts and returns string
+        list to str
+        """
+        new_str = ""
+        if msg:
+            for line in msg:
+                new_str += colorize("GOOD", " * ") + line + "\n"
+            return new_str
+        else:
+            new_str = "nspctl nothing to show \n"
+            return "{}".format(colorize("WARN", new_str))
+
+    def _bool_to_str(self, msg):
+        """
+        Converts and returns string
+        boolean to str
+        """
+        if msg is True:
+            new_str = "Command is executed successfully \n"
+            return "{}".format(colorize("GOOD", new_str))
+        else:
+            new_str = "Command is executed failed!"
+            return "{}".format(colorize("BAD", new_str))
+
+    def _dict_to_str(self, msg):
+        """
+        Converts and returns string
+        dict to str
+        """
+        if msg:
+            new_str = json.dumps(msg, indent=2, default=str)
+            return new_str
+        else:
+            new_str = "nspctl nothing to show \n"
+            return "{}".format(colorize("WARN", new_str))
+
+    def _str_to_str(self, msg):
+        """
+        Converts and returns string
+        str to str
+        """
+        if msg:
+            return msg
+        else:
+            new_str = "nspctl nothing to show \n"
+            return "{}".format(colorize("WARN", new_str))
+
+    def _repr(self, msg):
+        """
+        Call the types methods
+        """
+        typ = type(msg)
+        assert typ in _builtin_types, "Invalid data type"
+
+        func = "_" + typ.__name__ + "_to_str"
+        self.new_msg = getattr(self, func)(msg)
+
+
+_builtin_types = frozenset(
+    {
+        str,
+        bool,
+        dict,
+        list
+    }
+)
+
+
+def nprint(msg):
+    """
+    Print a Python object
+    with nspctl output styles
+    """
+    output = NspctlOutput()
+    fancy_output = output.pprint(msg)
+    return fancy_output

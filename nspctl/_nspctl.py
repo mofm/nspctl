@@ -11,6 +11,7 @@ from nspctl.utils.cmd import run_cmd, popen
 from nspctl.utils.args import invalid_kwargs, clean_kwargs
 from nspctl.utils.container_resource import cont_run, copy_to, con_init, login_shell
 from nspctl.utils.path import which
+from nspctl.lib.functools import alias_function
 
 logger = logging.getLogger(__name__)
 
@@ -293,11 +294,15 @@ def list_running():
         for line in con_running.splitlines():
             try:
                 ret.append(line.split()[0])
-                return sorted(ret)
             except IndexError:
                 pass
-    else:
-        return ret
+
+    return ret
+
+
+# 'machinectl list' shows only running containers, so allow this to work as an
+# alias to nspawn.list_running
+list = alias_function(list_running, "list")
 
 
 def list_stopped():

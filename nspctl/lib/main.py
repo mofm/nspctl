@@ -1,15 +1,20 @@
 import argparse
 
 from nspctl import _nspctl
+from nspctl.lib.output import nprint
 
 
 # Create a decorator pattern that maintains a registry
 def makeregistrar():
-    """Decorator that keeps track of tagged functions."""
+    """
+    Decorator that keeps track of tagged functions
+    """
     registry = {}
 
     def registrar(func):
-        """Store the function pointer."""
+        """
+        Store the function pointer
+        """
         registry[func.__name__] = func
         # normally a decorator returns a wrapped function,
         # but here we return func unmodified, after registering it
@@ -21,7 +26,11 @@ def makeregistrar():
 # Create the decorator
 command = makeregistrar()
 
+
 class NspctlCmd(object):
+    """
+    NspctlCmd object
+    """
 
     def __init__(self):
         self.parser = None
@@ -29,10 +38,15 @@ class NspctlCmd(object):
         self.resp_string = None
 
     def setup_parser(self, _parser):
+        """
+        Sets the class variable to what is passed in
+        """
         self.parser = _parser
 
-
     def action(self, args):
+        """
+        Calls the function
+        """
         if self.cmd is not None:
             return False
 
@@ -45,19 +59,24 @@ class NspctlCmd(object):
         return True
 
     def run_action(self, cmd, args):
-
+        """
+        Run the function from nspctl
+        """
         del args['subcommand']
 
         cmd = cmd.lstrip("-").replace("-", "_")
         method = getattr(_nspctl, cmd)
         result = method(**args)
+        # if isinstance(result, list):
+        #     result = ' \n'.join('* {}' for i in result).format(*result)
+        fancy_result = nprint(result)
 
-        if isinstance(result, list):
-            result = ' \n'.join(result)
-
-        return result
+        return fancy_result
 
     def get_result(self):
+        """
+        Returns the response
+        """
         if self.resp_string is None:
             raise Exception("Call action function first")
 
@@ -65,6 +84,9 @@ class NspctlCmd(object):
 
     @command
     def help(self, args=None, subparsers=None):
+        """
+        Returns help information
+        """
         if subparsers is not None:
             sp = subparsers.add_parser("help", aliases=['h'])
             sp.set_defaults(func=self.help)
@@ -75,6 +97,10 @@ class NspctlCmd(object):
 
     @command
     def info(self, args=None, subparsers=None):
+        """
+        Returns container information
+        All parameters are mandatory
+        """
         if subparsers is not None:
             sp = subparsers.add_parser("info")
             sp.add_argument("name")
@@ -85,8 +111,12 @@ class NspctlCmd(object):
 
     @command
     def list_all(self, args=None, subparsers=None):
+        """
+        Returns all installed Containers
+        All parameters are mandatory
+        """
         if subparsers is not None:
-            sp = subparsers.add_parser("list-all")
+            sp = subparsers.add_parser("list-all", aliases=['lsa'])
             sp.set_defaults(func=self.list_all)
             return
 
@@ -95,8 +125,12 @@ class NspctlCmd(object):
 
     @command
     def list_running(self, args=None, subparsers=None):
+        """
+        Returns running Containers
+        All parameters are mandatory
+        """
         if subparsers is not None:
-            sp = subparsers.add_parser("list-running")
+            sp = subparsers.add_parser("list-running", aliases=['lsr', 'list'])
             sp.set_defaults(func=self.list_running)
             return
 
@@ -105,10 +139,150 @@ class NspctlCmd(object):
 
     @command
     def list_stopped(self, args=None, subparsers=None):
+        """
+        Returns stopped Containers
+        All parameters are mandatory
+        """
         if subparsers is not None:
-            sp = subparsers.add_parser("list-stopped")
+            sp = subparsers.add_parser("list-stopped", aliases=['lss'])
             sp.set_defaults(func=self.list_stopped)
             return
 
         args = 'list-stopped'
+        return args
+
+    @command
+    def start(self, args=None, subparsers=None):
+        """
+        Start the container
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("start")
+            sp.add_argument("name")
+            sp.set_defaults(func=self.start)
+            return
+
+        args = 'start'
+        return args
+
+    @command
+    def stop(self, args=None, subparsers=None):
+        """
+        Stop the container
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("stop")
+            sp.add_argument("name")
+            sp.set_defaults(func=self.stop)
+            return
+
+        args = 'stop'
+        return args
+
+    @command
+    def poweroff(self, args=None, subparsers=None):
+        """
+        A clean shutdown to the container
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("poweroff")
+            sp.add_argument("name")
+            sp.set_defaults(func=self.poweroff)
+            return
+
+        args = 'poweroff'
+        return args
+
+    @command
+    def terminate(self, args=None, subparsers=None):
+        """
+        Kill all processes in the container
+        Not a clean shutdown
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("terminate")
+            sp.add_argument("name")
+            sp.set_defaults(func=self.terminate)
+            return
+
+        args = 'terminate'
+        return args
+
+    @command
+    def reboot(self, args=None, subparsers=None):
+        """
+        Reboot the container
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("reboot")
+            sp.add_argument("name")
+            sp.set_defaults(func=self.reboot)
+            return
+
+        args = 'reboot'
+        return args
+
+    @command
+    def enable(self, args=None, subparsers=None):
+        """
+        Set the named container to be launched at boot
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("enable")
+            sp.add_argument("name")
+            sp.set_defaults(func=self.enable)
+            return
+
+        args = 'enable'
+        return args
+
+    @command
+    def disable(self, args=None, subparsers=None):
+        """
+        Set the named container disable at boot
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("disable")
+            sp.add_argument("name")
+            sp.set_defaults(func=self.disable)
+            return
+
+        args = 'disable'
+        return args
+
+    @command
+    def remove(self, args=None, subparsers=None):
+        """
+        Remove the named container
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("remove")
+            sp.add_argument("name")
+            sp.set_defaults(func=self.remove)
+            return
+
+        args = 'remove'
+        return args
+
+    @command
+    def shell(self, args=None, subparsers=None):
+        """
+        logins container shell
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("shell")
+            sp.add_argument("name")
+            sp.set_defaults(func=self.shell)
+            return
+
+        args = 'shell'
         return args

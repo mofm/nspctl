@@ -1,1 +1,1 @@
-__all__ = ["help", "output", "main"]
+__all__ = ["help", "output", "main", "functools"]
