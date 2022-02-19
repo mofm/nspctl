@@ -60,15 +60,13 @@ class NspctlCmd(object):
 
     def run_action(self, cmd, args):
         """
-        Run the function from nspctl
+        Run the function from _nspctl.py
         """
         del args['subcommand']
 
         cmd = cmd.lstrip("-").replace("-", "_")
         method = getattr(_nspctl, cmd)
         result = method(**args)
-        # if isinstance(result, list):
-        #     result = ' \n'.join('* {}' for i in result).format(*result)
         fancy_result = nprint(result)
 
         return fancy_result

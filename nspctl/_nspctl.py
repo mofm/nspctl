@@ -12,6 +12,7 @@ from nspctl.utils.args import invalid_kwargs, clean_kwargs
 from nspctl.utils.container_resource import cont_run, copy_to, con_init, login_shell
 from nspctl.utils.path import which
 from nspctl.lib.functools import alias_function
+from nspctl.utils.user import get_uid
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,19 @@ def _ensure_exists(wrapped):
         return wrapped(name, *args, **clean_kwargs(**kwargs))
 
     return check_exits
+
+
+def _check_useruid(wrapped):
+    """
+    Decorator check to user has root privileges
+    """
+    @functools.wraps(wrapped)
+    def check_uid(*args, **kwargs):
+        if get_uid() != 0:
+            raise Exception("This command requires root privileges!")
+        return wrapped(*args, **clean_kwargs(**kwargs))
+
+    return check_uid
 
 
 def _root(name="", all_roots=False):
@@ -536,6 +550,7 @@ def info(name, **kwargs):
 
 
 @_ensure_exists
+@_check_useruid
 def start(name):
     """
     Start the named container
@@ -553,6 +568,7 @@ def start(name):
 
 
 @_ensure_exists
+@_check_useruid
 def stop(name, kill=False):
     """
     This is a compatibility function which provides the logic for
@@ -591,6 +607,7 @@ def terminate(name):
 
 
 @_ensure_exists
+@_check_useruid
 def enable(name):
     """
     Set the named container to be launched at boot
@@ -603,6 +620,7 @@ def enable(name):
 
 
 @_ensure_exists
+@_check_useruid
 def disable(name):
     """
     Set the named container disable at boot
@@ -615,6 +633,7 @@ def disable(name):
 
 
 @_ensure_exists
+@_check_useruid
 def reboot(name):
     """
     reboot the container
@@ -635,6 +654,7 @@ def reboot(name):
 
 
 @_ensure_exists
+@_check_useruid
 def remove(name, stop=False):
     """
     Remove the named container
@@ -659,6 +679,7 @@ def remove(name, stop=False):
 
 
 @_ensure_exists
+@_check_useruid
 def con_copy(name, source, dest, overwrite=False, makedirs=False):
     """
     Copy a file from host in to a container
@@ -686,6 +707,7 @@ def con_copy(name, source, dest, overwrite=False, makedirs=False):
 
 
 @_ensure_exists
+@_check_useruid
 def shell(name):
     """
     login container shell

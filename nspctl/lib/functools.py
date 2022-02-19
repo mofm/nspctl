@@ -1,8 +1,3 @@
-"""
-Utility functions to modify other functions
-"""
-
-
 import logging
 import types
 

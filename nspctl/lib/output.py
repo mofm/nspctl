@@ -203,6 +203,9 @@ class NspctlOutput(object):
         self.new_msg = None
 
     def pprint(self, msg):
+        """
+        This is main print method
+        """
         self._repr(msg)
         return self.new_msg
 
@@ -257,7 +260,7 @@ class NspctlOutput(object):
 
     def _repr(self, msg):
         """
-        Call the types methods
+        Call the type methods
         """
         typ = type(msg)
         assert typ in _builtin_types, "Invalid data type"
