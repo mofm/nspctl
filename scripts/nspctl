@@ -1,11 +1,17 @@
 #! /usr/bin/env python
 
 import argparse
+import sys
+
 from nspctl.lib import main
+from nspctl.lib.help import nspctl_help
+from nspctl import __version__
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=False)
     subparsers = parser.add_subparsers(dest='subcommand')
+    subparsers.add_parser('help')
+    subparsers.add_parser('version')
 
     nsp = main.NspctlCmd()
 
@@ -17,8 +23,22 @@ if __name__ == "__main__":
     nsp.setup_parser(parser)
 
     args_map = vars(args)
-
-    nsp.action(args_map)
-    rev = nsp.get_result()
-
-    print(rev)
+    try:
+        if args_map['subcommand'] in ('help', None):
+            nspctl_help()
+        elif args_map['subcommand'] == "version":
+            print(__version__ + "\n")
+        else:
+            nsp.action(args_map)
+            rev = nsp.get_result()
+            print(rev)
+    except argparse.ArgumentError as e:
+        sys.stderr.write("{}\n".format(str(e)))
+        sys.exit(1)
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except Exception:
+        import traceback
+        t_str = traceback.format_exc()
+        sys.stderr.write(t_str)
+        sys.exit(1)

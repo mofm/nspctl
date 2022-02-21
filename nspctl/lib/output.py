@@ -232,7 +232,7 @@ class NspctlOutput(object):
             new_str = "Command is executed successfully \n"
             return "{}".format(colorize("GOOD", new_str))
         else:
-            new_str = "Command is executed failed!"
+            new_str = "Command is executed failed! \n"
             return "{}".format(colorize("BAD", new_str))
 
     def _dict_to_str(self, msg):

@@ -34,11 +34,11 @@ def nspctl_help():
         + " [ "
         + green("list")
         + " ] [ "
-        + green("--all")
-        + " | "
-        + green("--running")
-        + " | "
-        + green("--stopped")
+        + green("list-running")
+        + " ] [ "
+        + green("list-stopped")
+        + " ] [ "
+        + green("list-all")
         + " ] "
     )
     print(
@@ -129,5 +129,39 @@ def nspctl_help():
         + green("container name")
         + " ] "
     )
+    print(yellow("Shortcuts:"))
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("(ls, lsr, list) -> list-running")
+        + " ] [ "
+        + green("lss -> list-stopped")
+        + " ] [ "
+        + green("lsa -> list-all")
+        + " ] "
+    )
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("en -> enable")
+        + " ] [ "
+        + green("dis -> disable")
+        + " ] [ "
+        + green("rm -> remove")
+        + "] [ "
+        + turquoise("container name")
+        + " ] "
+    )
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("sh -> shell")
+        + " ] [ "
+        + turquoise("container name")
+        + " ] "
+    )
     print()
-    print("   For more help: https://github.com/mofm/nspctl")
+    print("   For more help: https://github.com/mofm/nspctl \n")

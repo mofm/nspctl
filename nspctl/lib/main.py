@@ -81,19 +81,6 @@ class NspctlCmd(object):
         return self.resp_string
 
     @command
-    def help(self, args=None, subparsers=None):
-        """
-        Returns help information
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("help", aliases=['h'])
-            sp.set_defaults(func=self.help)
-            return
-
-        args = 'help'
-        return args
-
-    @command
     def info(self, args=None, subparsers=None):
         """
         Returns container information

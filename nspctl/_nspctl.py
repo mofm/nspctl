@@ -574,7 +574,7 @@ def stop(name, kill=False):
     This is a compatibility function which provides the logic for
     poweroff and terminate.
     """
-    if _ensure_consystemd(name) is True:
+    if _ensure_consystemd(name):
         if kill:
             action = "terminate"
         else:
@@ -639,7 +639,7 @@ def reboot(name):
     reboot the container
     """
     if state(name) == "running":
-        if _ensure_consystemd(name) is True:
+        if _ensure_consystemd(name):
             ret = _machinectl("reboot {}".format(name))
         else:
             cmd = "reboot"
@@ -684,7 +684,7 @@ def con_copy(name, source, dest, overwrite=False, makedirs=False):
     """
     Copy a file from host in to a container
     """
-    if _ensure_consystemd(name) is True:
+    if _ensure_consystemd(name):
         ret = _machinectl("copy-to {} {} '{}'".format(name, source, dest))
         if ret["returncode"] != 0:
             raise Exception("Failed to copying file/s")
@@ -713,7 +713,7 @@ def shell(name):
     login container shell
     """
     _ensure_running(name)
-    if _ensure_consystemd(name) is True:
+    if _ensure_consystemd(name):
         cmd = "machinectl shell '{}'".format(name)
         ret = popen(cmd, is_shell=True)
     else:
