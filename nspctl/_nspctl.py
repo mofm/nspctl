@@ -804,7 +804,7 @@ def pull_tar(url, name, verify=False):
     return _pull_image("tar", url, name, verify=verify)
 
 
-def pull_docker(url, name, index):
+def pull_dkr(url, name, index):
     """
     Execute a ``machinectl pull-dkr`` to download a docker image and add it to
     /var/lib/machines as a new container.

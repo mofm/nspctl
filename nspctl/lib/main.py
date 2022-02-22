@@ -66,7 +66,7 @@ class NspctlCmd(object):
 
         cmd = cmd.lstrip("-").replace("-", "_")
         method = getattr(_nspctl, cmd)
-        result = method(**args)
+        result = method(*args)
         fancy_result = nprint(result)
 
         return fancy_result
@@ -270,4 +270,55 @@ class NspctlCmd(object):
             return
 
         args = 'shell'
+        return args
+
+    @command
+    def pull_raw(self, args=None, subparsers=None):
+        """
+        Execute a ``machinectl pull-raw`` to download a .qcow2 or raw disk image
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("pull-raw")
+            sp.add_argument("url")
+            sp.add_argument("name")
+            sp.add_argument("verify", nargs="?", const=False)
+            sp.set_defaults(func=self.pull_raw)
+            return
+
+        args = 'pull_raw'
+        return args
+
+    @command
+    def pull_tar(self, args=None, subparsers=None):
+        """
+        Execute a ``machinectl pull-tar`` to download a .tar container image
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("pull-tar")
+            sp.add_argument("url")
+            sp.add_argument("name")
+            sp.add_argument("verify", nargs="?", const=False)
+            sp.set_defaults(func=self.pull_tar)
+            return
+
+        args = 'pull_tar'
+        return args
+
+    @command
+    def pull_dkr(self, args=None, subparsers=None):
+        """
+        Execute a ``machinectl pull-dkr`` to download a docker image
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("pull-dkr")
+            sp.add_argument("url")
+            sp.add_argument("name")
+            sp.add_argument("index")
+            sp.set_defaults(func=self.pull_dkr)
+            return
+
+        args = 'pull_dkr'
         return args
