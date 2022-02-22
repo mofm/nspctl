@@ -66,7 +66,7 @@ class NspctlCmd(object):
 
         cmd = cmd.lstrip("-").replace("-", "_")
         method = getattr(_nspctl, cmd)
-        result = method(*args)
+        result = method(**args)
         fancy_result = nprint(result)
 
         return fancy_result

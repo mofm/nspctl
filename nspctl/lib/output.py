@@ -241,7 +241,8 @@ class NspctlOutput(object):
         dict to str
         """
         if msg:
-            new_str = json.dumps(msg, indent=2, default=str)
+            cln_msg = eval(str(msg).encode('ascii', 'ignore').decode())
+            new_str = json.dumps(cln_msg, indent=2, default=str)
             return new_str
         else:
             new_str = "nspctl nothing to show \n"

@@ -724,6 +724,7 @@ def shell(name):
             exec_driver=EXEC_DRIVER,
             is_shell=True,
         )
+    return True
 
 
 def _pull_image(img_type, image, name, **kwargs):
