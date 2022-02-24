@@ -1,5 +1,5 @@
-from setuptools import setup
-import nspctl
+from setuptools import setup, find_packages
+from src.nspctl import __version__
 
 
 classifiers = [
@@ -20,8 +20,9 @@ classifiers = [
 
 setup(
     name='nspctl',
-    version=nspctl.__version__,
-    packages=['nspctl', 'nspctl.utils', 'nspctl.lib'],
+    version=__version__,
+    packages=find_packages(where='src'),
+    packages_dir={"": "src"},
     url='https://github.com/mofm/nspctl',
     license='GPLv3',
     author='Emre Eryilmaz',

@@ -37,8 +37,188 @@ nspctl supports containers with any init system. nspctl provides almost all of t
 * Bootstrap **Ubuntu** container ("xenial" and newer are supported)
 * Bootstrap **Arch Linux** container
 
+Installation
+############
+
+Requirements:
+*************
+
+- Python >=3.8
+
+Dependencies:
+*************
+
+- systemd-container package
+
+For Debian and Ubuntu:
+
+.. code-block::
+
+  $ apt-get install systemd-container
+
+For Centos, Fedora or Redhat Based Distributions:
+
+.. code-block::
+
+  $ yum install systemd-container
+
+or
+
+.. code-block::
+
+ $ dnf install systemd-container
+
+.. note::
+
+  Gentoo with systemd and Arch Linux users don't need to install any packages.
+
+Install:
+********
+
+**From Github:**
+
+* Clone this repository:
+
+.. code-block::
+
+    $ git clone https://github.com/mofm/nspctl
+
+* and install via pip:
+
+.. code-block::
+
+    $ pip install -e nspctl
+
+Usage:
+######
+
+**Synopsis:**
+
+.. code-block::
+
+  nspctl [ arguments ] [ options ] [ container name | URL | distribution ] [ ... ]
+
+Commands:
+*********
+
+- '*list*' : List currently running (online) containers.
+
+.. code-block::
+
+  $ nspctl list
+
+- '*list-stopped*' : List stopped containers.( shortopts: 'lss')
+
+.. code-block::
+
+  $ nspctl list-stopped
+  $ nspctl lss
+
+- '*list-running*' : List currently running containers.(alias: 'list', shortopt: 'lsr')
+
+.. code-block::
+
+  $ nspctl list-running
+  $ nspctl lsr
+
+- '*list-all*' : List all containers.(shortopt: 'lsa')
+
+.. code-block::
+
+  $ nspctl list-all
+  $ nspctl lsa
+
+- '*info NAME*' : Show properties of container.
+
+.. code-block::
+
+  $ nspctl info ubuntu-20.04
+
+- '*start NAME*' : Start a container as system service.
+
+.. code-block::
+
+  $ nspctl start ubuntu-20.04
+
+- '*reboot NAME*' : Reboot a container.
+
+.. code-block::
+
+  $ nspctl reboot ubuntu-20.04
+
+- '*stop NAME*' : Stop a container. Shutdown cleanly.(alias: 'poweroff')
+
+.. code-block::
+
+  $ nspctl stop ubuntu-20.04
+
+- '*terminate NAME*' : Immediately terminates container without cleanly shutting it down.
+
+.. code-block::
+
+  $ nspctl terminate ubuntu-20.04
+
+- '*poweroff NAME*' : Poweroff a container. Shutdown cleanly.
+
+.. code-block::
+
+  $ nspctl poweroff ubuntu-20.04
+
+- '*enable NAME*' : Enable a container as a system service at system boot.
+
+.. code-block::
+
+  $ nspctl enable ubuntu-20.04
+
+- '*disable NAME*' : Disable a container as a system service at system boot.
+
+.. code-block::
+
+  $ nspctl disable ubuntu-20.04
+
+- '*remove NAME*' : Remove a container completely.
+
+.. code-block::
+
+  $ nspctl remove ubuntu-20.04
+
+- '*shell NAME*' : Open an interactive shell session in a container.
+
+.. code-block::
+
+  $ nspctl shell ubuntu-20.04
+
+Container Operations:
+*********************
+
+- '*pull-tar URL NAME*' : Downloads a .tar container image from the specified URL.(tar, tar.gz, tar.xz, tar.bz2)
+
+.. code-block::
+
+  $ nspctl pul-tar https://github.com/mofm/meta-econ/releases/download/v0.3.0-r2/econ-tiny-nginx-20220123-qemux86-64.tar.xz econ-nginx
+
+- '*pull-raw URL NAME*' : Downloads a .raw container from the specified URL.(qcow2 or compressed as gz, xz, bz2)
+
+.. code-block::
+
+  $ nspctl pull-raw http://ftp.fau.de/gentoo/experimental/amd64/qemu/allpython-amd64-qemu-20100531.qcow2.xz gentoo-python
+
+- '*pull-dkr URL NAME INDEX*' : Download a docker image from the specified URL.
+
+.. code-block::
+
+  $ nspctl pull-dkr centos/centos6 cent6 https://get.docker.com
+
+- '*bootstrap NAME DIST VERSION*' : Bootstrap a container from package servers. Supported Distributions are Debian, Ubuntu and Arch Linux.
+
+.. code-block::
+
+  $ nspctl bootstrap ubuntu-20.04 ubuntu focal
+  $ nspctl bootstrap debian-bullseye debian stable
+  $ nspctl bootstrap arch-test arch
+
 
 Roadmap
 ########
 
-nspctl is under development. First release will be released soon.
+nspctl is under development.

@@ -205,6 +205,7 @@ def _bootstrap_ubuntu(name, **kwargs):
     return ret
 
 
+@_check_useruid
 def bootstrap_container(name, dist=None, version=None):
     """
     Bootstrap a container from package servers
@@ -223,6 +224,9 @@ def bootstrap_container(name, dist=None, version=None):
         return globals()["_bootstrap_{}".format(dist)](name, version=version)
     except KeyError:
         raise Exception('Unsupported distribution "{}"'.format(dist))
+
+
+bootstrap = alias_function(bootstrap_container, "bootstrap")
 
 
 def _ensure_running(name):
@@ -315,7 +319,7 @@ def list_running():
 
 
 # 'machinectl list' shows only running containers, so allow this to work as an
-# alias to nspawn.list_running
+# alias to list_running
 list = alias_function(list_running, "list")
 
 

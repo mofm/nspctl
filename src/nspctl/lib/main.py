@@ -322,3 +322,20 @@ class NspctlCmd(object):
 
         args = 'pull_dkr'
         return args
+
+    @command
+    def bootstrap(self, args=None, subparsers=None):
+        """
+        Bootstrap a container from package servers
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("bootstrap")
+            sp.add_argument("name")
+            sp.add_argument("dist")
+            sp.add_argument("version")
+            sp.set_defaults(func=self.bootstrap)
+            return
+
+        args = 'bootstrap'
+        return args

@@ -3,7 +3,7 @@ from nspctl.lib.output import turquoise, green, yellow
 
 def nspctl_help():
     print(yellow("nspctl:") + " management tool for systemd-nspawn containers")
-    print(yellow("Usage:"))
+    print(yellow("Synopsis:"))
     print(
         "   "
         + turquoise("nspctl")
@@ -19,6 +19,7 @@ def nspctl_help():
         + turquoise("distribution")
         + " ] [ ... ]"
     )
+    print(yellow("Usage:"))
     print(
         "   "
         + turquoise("nspctl")
@@ -50,6 +51,17 @@ def nspctl_help():
         + green("stop")
         + " | "
         + green("reboot")
+        + " ] [ "
+        + turquoise("container name")
+        + " ] "
+    )
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("poweroff")
+        + " | "
+        + green("terminate")
         + " ] [ "
         + turquoise("container name")
         + " ] "
@@ -105,7 +117,7 @@ def nspctl_help():
         + " | "
         + green("pull-tar")
         + " | "
-        + green("pull-docker")
+        + green("pull-dkr")
         + " ] [ "
         + turquoise("URL")
         + " ] [ "
