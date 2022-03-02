@@ -8,6 +8,13 @@ from nspctl.lib.help import nspctl_help
 from nspctl import __version__
 
 if __name__ == "__main__":
+    if not main.check_system():
+        sys.stderr.write(
+            "The nspctl command failed to load:"
+            "only work on systems that have been booted with systemd."
+        )
+        sys.exit(1)
+
     parser = argparse.ArgumentParser(add_help=False)
     subparsers = parser.add_subparsers(dest='subcommand')
     subparsers.add_parser('help')

@@ -175,5 +175,18 @@ def nspctl_help():
         + turquoise("container name")
         + " ] "
     )
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("cpt -> copy-to")
+        + " ] [ "
+        + turquoise("container name")
+        + " ] [ "
+        + turquoise("source")
+        + " ] [ "
+        + turquoise("destination")
+        + " ] "
+    )
     print()
     print("   For more help: https://github.com/mofm/nspctl \n")

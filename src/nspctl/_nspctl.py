@@ -5,11 +5,10 @@ import re
 import functools
 import shutil
 
-from nspctl.utils.systemd import systemd_booted, systemd_version
-from nspctl.utils.platform import is_linux
+from nspctl.utils.systemd import systemd_version
 from nspctl.utils.cmd import run_cmd, popen
 from nspctl.utils.args import invalid_kwargs, clean_kwargs
-from nspctl.utils.container_resource import cont_run, copy_to, con_init, login_shell
+from nspctl.utils.container_resource import cont_run, cont_cpt, con_init, login_shell
 from nspctl.utils.path import which
 from nspctl.lib.functools import alias_function
 from nspctl.utils.user import get_uid
@@ -19,22 +18,6 @@ logger = logging.getLogger(__name__)
 __virtualname__ = "nspawn"
 WANT = "/etc/systemd/system/multi-user.target.wants/systemd-nspawn@{0}.service"
 EXEC_DRIVER = "nsenter"
-
-
-def __virtual__():
-    """
-    Only work on systems that have been booted with systemd
-    """
-    if is_linux() and systemd_booted():
-        if systemd_version() is None:
-            logger.error("nspctl: Unable to determine systemd version")
-        else:
-            return __virtualname__
-    return (
-        False,
-        "The nspctl command failed to load: "
-        "only work on systems that have been booted with systemd.",
-    )
 
 
 def _sd_version():
@@ -684,7 +667,7 @@ def remove(name, stop=False):
 
 @_ensure_exists
 @_check_useruid
-def con_copy(name, source, dest, overwrite=False, makedirs=False):
+def copy_to(name, source, dest, overwrite=False, makedirs=False):
     """
     Copy a file from host in to a container
     """
@@ -697,7 +680,7 @@ def con_copy(name, source, dest, overwrite=False, makedirs=False):
     else:
         orig_state = state(name)
         pid = con_pid(name)
-        ret = copy_to(
+        ret = cont_cpt(
             pid,
             source,
             dest,

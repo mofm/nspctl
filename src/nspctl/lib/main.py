@@ -1,7 +1,24 @@
 import argparse
 
+from nspctl.utils.platform import is_linux
+from nspctl.utils.systemd import systemd_booted, systemd_version
 from nspctl import _nspctl
 from nspctl.lib.output import nprint
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def check_system():
+    """
+    Only work on systems that have been booted with systemd
+    """
+    if is_linux() and systemd_booted():
+        if systemd_version() is None:
+            logger.error("nspctl: Unable to determine systemd version")
+        else:
+            return True
+    return False
 
 
 # Create a decorator pattern that maintains a registry
@@ -338,4 +355,21 @@ class NspctlCmd(object):
             return
 
         args = 'bootstrap'
+        return args
+
+    @command
+    def copy_to(self, args=None, subparsers=None):
+        """
+        Copy a file from host in to a container
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("copy-to", aliases=['cpt'])
+            sp.add_argument("name")
+            sp.add_argument("source")
+            sp.add_argument("dest")
+            sp.set_defaults(func=self.copy_to)
+            return
+
+        args = 'copy_to'
         return args

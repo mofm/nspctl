@@ -99,7 +99,7 @@ def cont_run(
 
 
 @_validate
-def copy_to(
+def cont_cpt(
         pid,
         source,
         dest,
@@ -127,18 +127,27 @@ def copy_to(
     if not os.path.isabs(dest):
         raise Exception("Destination path must be absolute")
     if (
-        cont_run(pid, "test -d {}".format(dest), exec_driver=exec_driver, is_shell=True)["returncode"]
+        cont_run(pid, "test -d {}".format(dest),
+                 container_type=container_type,
+                 exec_driver=exec_driver,
+                 is_shell=True)["returncode"]
         == 0
     ):
         dest = os.path.join(dest, source_name)
     else:
         dest_dir, dest_name = os.path.split(dest)
         if (
-            cont_run(pid, "test -d {}".format(dest_dir), exec_driver=exec_driver, is_shell=True)["returncode"]
+            cont_run(pid, "test -d {}".format(dest_dir),
+                     container_type=container_type,
+                     exec_driver=exec_driver,
+                     is_shell=True)["returncode"]
             != 0
         ):
             if makedirs:
-                res = cont_run(pid, "mkdir -p {}".format(dest_dir), exec_driver=exec_driver, is_shell=True)
+                res = cont_run(pid, "mkdir -p {}".format(dest_dir),
+                               container_type=container_type,
+                               exec_driver=exec_driver,
+                               is_shell=True)
                 if res["returncode"] != 0:
                     error = (
                         "Unable to create destination directory {} "
@@ -152,7 +161,10 @@ def copy_to(
 
     if (
         not overwrite and
-        cont_run(pid, "test -e {}".format(dest), exec_driver=exec_driver, is_shell=True)["returncode"]
+        cont_run(pid, "test -e {}".format(dest),
+                 container_type=container_type,
+                 exec_driver=exec_driver,
+                 is_shell=True)["returncode"]
         == 0
     ):
         raise Exception(
@@ -163,10 +175,11 @@ def copy_to(
     if exec_driver == "nsenter":
         copy_cmd = 'cat "{}" | {} env -i {} tee "{}"'.format(
             source, _nsenter(pid), PATH, dest)
-        if copy_cmd != os.EX_OK:
-            raise Exception("failed copying file!")
+        cmd_exec = run_cmd(copy_cmd, is_shell=True)
+        if cmd_exec["returncode"] != 0:
+            raise Exception("Failed copying the file!")
         else:
-            return "copy command completed"
+            return "Copy command completed!"
 
 
 @_validate

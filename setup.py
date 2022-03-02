@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-from src.nspctl import __version__
 
 
 classifiers = [
@@ -20,7 +19,6 @@ classifiers = [
 
 setup(
     name='nspctl',
-    version=__version__,
     packages=find_packages(where='src'),
     packages_dir={"": "src"},
     url='https://github.com/mofm/nspctl',
