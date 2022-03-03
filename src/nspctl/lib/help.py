@@ -130,15 +130,15 @@ def nspctl_help():
         + " [ "
         + green("bootstrap")
         + " ] [ "
+        + turquoise("container name")
+        + " ] [ "
         + turquoise("debian")
         + " | "
         + turquoise("ubuntu")
         + " | "
         + turquoise("arch")
         + " ] [ "
-        + turquoise("--version")
-        + " ] [ "
-        + green("container name")
+        + green("version")
         + " ] "
     )
     print(yellow("Shortcuts:"))

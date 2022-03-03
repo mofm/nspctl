@@ -350,7 +350,7 @@ class NspctlCmd(object):
             sp = subparsers.add_parser("bootstrap")
             sp.add_argument("name")
             sp.add_argument("dist")
-            sp.add_argument("version")
+            sp.add_argument("version", nargs="?")
             sp.set_defaults(func=self.bootstrap)
             return
 

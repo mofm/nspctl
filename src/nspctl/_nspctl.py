@@ -119,7 +119,7 @@ def _bootstrap_arch(name, **kwargs):
     ret = run_cmd(cmd, is_shell=True)
     if ret["returncode"] != 0:
         _build_failed(dest, name)
-    return ret
+    return ret["stdout"]
 
 
 def _bootstrap_debian(name, **kwargs):
@@ -149,11 +149,11 @@ def _bootstrap_debian(name, **kwargs):
         )
 
     dest = _make_container_root(name)
-    cmd = "debootstrap --arch=amd64 {} {}".format(version, dest)
+    cmd = "debootstrap --include=systemd-container {} {}".format(version, dest)
     ret = run_cmd(cmd, is_shell=True)
     if ret["returncode"] != 0:
         _build_failed(dest, name)
-    return ret
+    return ret["stdout"]
 
 
 def _bootstrap_ubuntu(name, **kwargs):
@@ -181,11 +181,11 @@ def _bootstrap_ubuntu(name, **kwargs):
         )
 
     dest = _make_container_root(name)
-    cmd = "debootstrap --arch=amd64 {} {}".format(version, dest)
+    cmd = "debootstrap --include=systemd-container {} {}".format(version, dest)
     ret = run_cmd(cmd, is_shell=True)
     if ret["returncode"] != 0:
         _build_failed(dest, name)
-    return ret
+    return ret["stdout"]
 
 
 @_check_useruid
