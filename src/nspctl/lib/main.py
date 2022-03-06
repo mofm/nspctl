@@ -324,23 +324,6 @@ class NspctlCmd(object):
         return args
 
     @command
-    def pull_dkr(self, args=None, subparsers=None):
-        """
-        Execute a ``machinectl pull-dkr`` to download a docker image
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("pull-dkr")
-            sp.add_argument("url")
-            sp.add_argument("name")
-            sp.add_argument("index")
-            sp.set_defaults(func=self.pull_dkr)
-            return
-
-        args = 'pull_dkr'
-        return args
-
-    @command
     def bootstrap(self, args=None, subparsers=None):
         """
         Bootstrap a container from package servers
@@ -372,4 +355,32 @@ class NspctlCmd(object):
             return
 
         args = 'copy_to'
+        return args
+
+    @command
+    def clean(self, args=None, subparsers=None):
+        """
+        Remove hidden VM or container images
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("clean")
+            sp.set_defaults(func=self.clean)
+            return
+
+        args = 'clean'
+        return args
+
+    @command
+    def clean_all(self, args=None, subparsers=None):
+        """
+        Remove all VM and container images
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("clean-all")
+            sp.set_defaults(func=self.clean_all)
+            return
+
+        args = 'clean_all'
         return args

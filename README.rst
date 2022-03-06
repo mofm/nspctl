@@ -219,13 +219,7 @@ Container Operations:
 
 .. code-block::
 
-  $ nspctl pull-raw http://ftp.fau.de/gentoo/experimental/amd64/qemu/allpython-amd64-qemu-20100531.qcow2.xz gentoo-python
-
-- *pull-dkr URL NAME INDEX* : Download a docker image from the specified URL.
-
-.. code-block::
-
-  $ nspctl pull-dkr centos/centos6 cent6 https://get.docker.com
+  $ nspctl pull-raw https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-Base-35-1.2.x86_64.raw.xz fedora-cloud-base-35
 
 - *bootstrap NAME DIST VERSION* : Bootstrap a container from package servers. Supported Distributions are Debian, Ubuntu and Arch Linux.
 

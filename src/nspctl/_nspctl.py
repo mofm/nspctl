@@ -647,7 +647,7 @@ def remove(name, stop=False):
     Remove the named container
     """
     if not stop and state(name) != "stopped":
-        raise Exception("Cantainer '{}' is not stopped".format(name))
+        raise Exception("Container '{}' is not stopped".format(name))
 
     def _failed_remove(name, exc):
         raise Exception("Unable to remove container '{}': '{}'".format(name, exc))
@@ -723,8 +723,6 @@ def _pull_image(img_type, image, name, **kwargs):
         raise Exception("Container '{}' already exists".format(name))
     if img_type in ("raw", "tar"):
         valid_kwargs = ("verify",)
-    elif img_type == "dkr":
-        valid_kwargs = ("index",)
     else:
         raise Exception("Unsupported image type '{}'".format(img_type))
 
@@ -759,10 +757,6 @@ def _pull_image(img_type, image, name, **kwargs):
                     _bad_verify()
                 pull_opt.append("--verify={}".format(verify))
 
-    elif img_type == "dkr":
-        if "index" in kwargs:
-            pull_opt.append("--dkr-index-url={}".format(kwargs["index"]))
-
     cmd = "pull-{} {} {} {}".format(img_type, " ".join(pull_opt), image, name)
     ret = _machinectl(cmd)
     if ret["returncode"] != 0:
@@ -792,9 +786,43 @@ def pull_tar(url, name, verify=False):
     return _pull_image("tar", url, name, verify=verify)
 
 
-def pull_dkr(url, name, index):
+@_check_useruid
+def clean():
     """
-    Execute a ``machinectl pull-dkr`` to download a docker image and add it to
-    /var/lib/machines as a new container.
+    Remove hidden VM or container images
     """
-    return _pull_image("dkr", url, name, index=index)
+    def _failing_clean(file, exc):
+        raise Exception("Unable to clean '{}': '{}'".format(file, exc))
+
+    if _sd_version() >= 219:
+        rootdir = "/var/lib/machines"
+        if not os.path.exists(rootdir):
+            raise Exception("{} directory does not exists.".format(rootdir))
+        try:
+            for file in os.listdir(rootdir):
+                if file.startswith((".#raw", ".tar-http")):
+                    if os.path.isfile(os.path.join(rootdir, file)):
+                        os.remove(os.path.join(rootdir, file))
+                    else:
+                        shutil.rmtree(os.path.join(rootdir, file))
+        except OSError as exc:
+            _failing_clean(file, exc)
+
+        return True
+
+
+@_check_useruid
+def clean_all():
+    """
+    Remove all VM and container images
+    """
+    if list_running():
+        names = ", ".join(list_running())
+        logger.warning(names + ": running. Unable to remove running VM or container.")
+
+    if _sd_version() >= 219:
+        ret = _machinectl("clean --all")
+        if ret["returncode"] != 0:
+            raise Exception("Unable to clean all images: '{}'".format(ret["stderr"]))
+
+    return True

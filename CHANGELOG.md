@@ -8,11 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-nothing
+- added clean feature. clean all hidden vm and container images
+- added clean-all feature. clean all installed vm and container images
 
 ### Changed
 
-nothing
+- version number changed to dev1
+- removed pull-dkr feature. no longer supported by machinectl
 
 ### Fixed
 
