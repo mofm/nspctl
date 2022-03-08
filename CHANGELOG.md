@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- added clean feature. clean all hidden vm and container images
-- added clean-all feature. clean all installed vm and container images
+- added clean. clean all hidden vm and container images
+- added clean-all. clean all installed vm and container images
+- added exec. runs a new command in a running container
 
 ### Changed
 

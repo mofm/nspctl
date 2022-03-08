@@ -384,3 +384,19 @@ class NspctlCmd(object):
 
         args = 'clean_all'
         return args
+
+    @command
+    def exec_run(self, args=None, subparsers=None):
+        """
+        runs a new command in a running container
+        All parameters are mandatory
+        """
+        if subparsers is not None:
+            sp = subparsers.add_parser("exec")
+            sp.add_argument("name")
+            sp.add_argument("cmd")
+            sp.set_defaults(func=self.exec_run)
+            return
+
+        args = 'exec_run'
+        return args

@@ -36,6 +36,9 @@ nspctl supports containers with any init system. nspctl provides almost all of t
 * Bootstrap **Debian** container ("jessie" and newer are supported)
 * Bootstrap **Ubuntu** container ("xenial" and newer are supported)
 * Bootstrap **Arch Linux** container
+* Remove hidden VM or container images
+* Remove all VM and container images
+* Runs a new command in a running container (non-interactive shell)
 
 Installation
 ############
@@ -205,6 +208,25 @@ Commands:
 .. code-block::
 
     $ nspctl copy-to ubuntu-20.04 /home/hostuser/magicfile /home/containeruser/
+
+- *clean* : Remove hidden VM or container images. This command removes all hidden machine images from /var/lib/machines/
+
+.. code-block::
+
+    $ nspctl clean
+
+- *clean-all* : Remove all VM or container images. This command removes all machine images from /var/lib/machines/.
+
+.. code-block::
+
+    $ nspctl clean-all
+
+- *exec NAME 'COMMAND'* : Runs a new command in a running container.
+
+.. code-block::
+
+    $ nspctl exec ubuntu-20.04 'cat /etc/os-release'
+
 
 Container Operations:
 *********************

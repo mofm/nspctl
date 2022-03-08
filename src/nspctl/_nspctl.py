@@ -87,7 +87,7 @@ def _make_container_root(name):
             os.makedirs(path)
             return path
         except OSError as exc:
-            raise exc(
+            raise Exception(
                 "Unable to make container root directory {}: {}".format(name, exc)
             )
 
@@ -303,7 +303,7 @@ def list_running():
 
 # 'machinectl list' shows only running containers, so allow this to work as an
 # alias to list_running
-list = alias_function(list_running, "list")
+alias_list = alias_function(list_running, "list")
 
 
 def list_stopped():
@@ -794,6 +794,9 @@ def clean():
     def _failing_clean(file, exc):
         raise Exception("Unable to clean '{}': '{}'".format(file, exc))
 
+    # machinectl does not clean hidden raw files,
+    # so we need to clean manually instead of
+    # machinectl clean command
     if _sd_version() >= 219:
         rootdir = "/var/lib/machines"
         if not os.path.exists(rootdir):
@@ -826,3 +829,39 @@ def clean_all():
             raise Exception("Unable to clean all images: '{}'".format(ret["stderr"]))
 
     return True
+
+
+def _systemd_run(cmd):
+    """
+    Helper function to run systemd-run
+    """
+    prefix = "systemd-run"
+    return run_cmd("{} {}".format(prefix, cmd), is_shell=True)
+
+
+@_ensure_exists
+@_check_useruid
+def exec_run(name, cmd):
+    """
+    runs a new command in a running container
+    """
+    if name not in list_running():
+        start(name)
+
+    if _ensure_consystemd(name):
+        ret = _systemd_run("-M {} -P {}".format(name, cmd))
+    else:
+        # systemd-run does not work with another init system.
+        # so we need to run nsenter
+        ret = run(name, cmd)
+
+    if ret["returncode"] != 0:
+        return False
+    elif ret["stdout"]:
+        return ret["stdout"]
+
+    return True
+
+
+# alias to exec_run
+alias_exec = alias_function(exec_run, "exec")
