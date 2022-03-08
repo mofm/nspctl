@@ -3,8 +3,8 @@ import os
 import pipes
 import functools
 
-from nspctl.utils.cmd import run_cmd, popen
-from nspctl.utils.args import clean_kwargs
+from .cmd import run_cmd, popen
+from .args import clean_kwargs
 
 logger = logging.getLogger(__name__)
 

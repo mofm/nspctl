@@ -2,8 +2,8 @@ import logging
 import os
 import re
 
-from nspctl.utils.path import which
-from nspctl.utils.cmd import run_cmd
+from .path import which
+from .cmd import run_cmd
 
 logger = logging.getLogger(__name__)
 

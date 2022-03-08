@@ -5,13 +5,13 @@ import re
 import functools
 import shutil
 
-from nspctl.utils.systemd import systemd_version
-from nspctl.utils.cmd import run_cmd, popen
-from nspctl.utils.args import invalid_kwargs, clean_kwargs
-from nspctl.utils.container_resource import cont_run, cont_cpt, con_init, login_shell
-from nspctl.utils.path import which
-from nspctl.lib.functools import alias_function
-from nspctl.utils.user import get_uid
+from .utils.systemd import systemd_version
+from .utils.cmd import run_cmd, popen
+from .utils.args import invalid_kwargs, clean_kwargs
+from .utils.container_resource import cont_run, cont_cpt, con_init, login_shell
+from .utils.path import which
+from .lib.functools import alias_function
+from .utils.user import get_uid
 
 logger = logging.getLogger(__name__)
 

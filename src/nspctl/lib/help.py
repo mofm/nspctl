@@ -1,4 +1,4 @@
-from nspctl.lib.output import turquoise, green, yellow
+from .output import turquoise, green, yellow
 
 
 def nspctl_help():

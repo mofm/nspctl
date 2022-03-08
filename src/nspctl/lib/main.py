@@ -1,10 +1,10 @@
 import argparse
-
-from nspctl.utils.platform import is_linux
-from nspctl.utils.systemd import systemd_booted, systemd_version
-from nspctl import _nspctl
-from nspctl.lib.output import nprint
 import logging
+
+from ..utils.platform import is_linux
+from ..utils.systemd import systemd_booted, systemd_version
+from .. import _nspctl
+from .output import nprint
 
 logger = logging.getLogger(__name__)
 
