@@ -1,7 +1,7 @@
 from .output import turquoise, green, yellow
 
 
-def nspctl_help():
+def nspctl_usage():
     print(yellow("nspctl:") + " management tool for systemd-nspawn containers")
     print(yellow("Synopsis:"))
     print(
@@ -108,6 +108,37 @@ def nspctl_help():
         + green("Container Path")
         + " ] "
     )
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("rename")
+        + " ] [ "
+        + turquoise("container name")
+        + " ] [ "
+        + turquoise("new container name")
+        + " ] "
+    )
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("exec")
+        + " ] [ "
+        + turquoise("container name")
+        + " ] [ "
+        + turquoise("command")
+        + " ] "
+    )
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("--help")
+        + " | "
+        + green("-h")
+        + " ] "
+    )
     print(yellow("Container Operations:"))
     print(
         "   "
@@ -120,6 +151,30 @@ def nspctl_help():
         + green("pull-dkr")
         + " ] [ "
         + turquoise("URL")
+        + " ] [ "
+        + turquoise("container name")
+        + " ] "
+    )
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("import-raw")
+        + " | "
+        + green("import-tar")
+        + " ] [ "
+        + turquoise("image path")
+        + " ] [ "
+        + turquoise("container name")
+        + " ] "
+    )
+    print(
+        "   "
+        + turquoise("nspctl")
+        + " [ "
+        + green("import-fs")
+        + " ] [ "
+        + turquoise("directory path")
         + " ] [ "
         + turquoise("container name")
         + " ] "

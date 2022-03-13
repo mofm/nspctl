@@ -39,6 +39,7 @@ nspctl supports containers with any init system. nspctl provides almost all of t
 * Remove hidden VM or container images
 * Remove all VM and container images
 * Run a new command in a running container (non-interactive shell)
+* Renames a container or VM image
 
 Installation
 ############
@@ -227,6 +228,24 @@ Commands:
 
     $ nspctl exec ubuntu-20.04 'cat /etc/os-release'
 
+- *rename NAME NEWNAME* : Renames a container or VM image.
+
+.. code-block::
+
+    $ nspctl rename ubuntu-20.04 ubuntu-newimage
+
+- *usage* : nspctl usage page
+
+.. code-block::
+
+    $ nspctl usage
+
+- *--help* : display help page and exit
+
+.. code-block::
+
+    $ nspctl --help or -h
+
 
 Container Operations:
 *********************
@@ -235,21 +254,41 @@ Container Operations:
 
 .. code-block::
 
-  $ nspctl pul-tar https://github.com/mofm/meta-econ/releases/download/v0.3.0-r2/econ-tiny-nginx-20220123-qemux86-64.tar.xz econ-nginx
+    $ nspctl pull-tar https://github.com/mofm/meta-econ/releases/download/v0.3.0-r2/econ-tiny-nginx-20220123-qemux86-64.tar.xz econ-nginx
 
 - *pull-raw URL NAME* : Downloads a .raw container from the specified URL.(qcow2 or compressed as gz, xz, bz2)
 
 .. code-block::
 
-  $ nspctl pull-raw https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-Base-35-1.2.x86_64.raw.xz fedora-cloud-base-35
+    $ nspctl pull-raw https://download.fedoraproject.org/pub/fedora/linux/releases/35/Cloud/x86_64/images/Fedora-Cloud-Base-35-1.2.x86_64.raw.xz fedora-cloud-base-35
+
+
+- *import-raw IMAGE NAME* : Execute a ``machinectl import-raw`` to import a .qcow2 or raw disk image.
+
+.. code-block::
+
+    $ nspctl import-raw Fedora-Cloud-Base-35-1.2.x86_64.raw.xz fedora-cloud-base-35
+
+- *import-tar IMAGE NAME* : Execute a ``machinectl import-tar`` to import a .tar container image.
+
+.. code-block::
+
+    $ nspctl import-tar econ-tiny-nginx-20220123-qemux86-64.tar.xz econ-nginx
+
+- *import-fs DIRECTORY NAME* : Execute a ``machinectl import-fs`` to import a directory image.
+
+.. code-block::
+
+    $ nspctl import-fs econ-tiny-nginx-20220123 econ-httpd
+
 
 - *bootstrap NAME DIST VERSION* : Bootstrap a container from package servers. Supported Distributions are Debian, Ubuntu and Arch Linux.
 
 .. code-block::
 
-  $ nspctl bootstrap ubuntu-20.04 ubuntu focal
-  $ nspctl bootstrap debian-bullseye debian stable
-  $ nspctl bootstrap arch-test arch
+    $ nspctl bootstrap ubuntu-20.04 ubuntu focal
+    $ nspctl bootstrap debian-latest debian stable
+    $ nspctl bootstrap arch-test arch
 
 
 Roadmap

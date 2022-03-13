@@ -3,42 +3,18 @@
 import argparse
 import sys
 
-from nspctl.lib import main
-from nspctl.lib.help import nspctl_help
-from nspctl import __version__
+from nspctl.lib.main import check_system, nspctl_main
 
 if __name__ == "__main__":
-    if not main.check_system():
+    if not check_system():
         sys.stderr.write(
             "The nspctl command failed to load:"
             "only work on systems that have been booted with systemd."
         )
         sys.exit(1)
 
-    parser = argparse.ArgumentParser(add_help=False)
-    subparsers = parser.add_subparsers(dest='subcommand')
-    subparsers.add_parser('help')
-    subparsers.add_parser('version')
-
-    nsp = main.NspctlCmd()
-
-    for (cmd_name, cmd_func) in list(main.command.all.items()):
-        func = getattr(nsp, cmd_name)
-        func(subparsers=subparsers)
-
-    args = parser.parse_args()
-    nsp.setup_parser(parser)
-
-    args_map = vars(args)
     try:
-        if args_map['subcommand'] in ('help', None):
-            nspctl_help()
-        elif args_map['subcommand'] == "version":
-            print(__version__ + "\n")
-        else:
-            nsp.action(args_map)
-            rev = nsp.get_result()
-            print(rev)
+        nspctl_main()
     except argparse.ArgumentError as e:
         sys.stderr.write("{}\n".format(str(e)))
         sys.exit(1)

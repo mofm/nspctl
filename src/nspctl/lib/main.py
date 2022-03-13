@@ -1,10 +1,12 @@
 import argparse
 import logging
+import sys
 
 from ..utils.platform import is_linux
 from ..utils.systemd import systemd_booted, systemd_version
-from .. import _nspctl
 from .output import nprint
+from .. import _nspctl, __version__
+from .usage import nspctl_usage
 
 logger = logging.getLogger(__name__)
 
@@ -21,27 +23,164 @@ def check_system():
     return False
 
 
-# Create a decorator pattern that maintains a registry
-def makeregistrar():
+no_args = {
+    "usage": {
+        "aliases": ["use"],
+        "help": "Display this usage information and exit",
+    },
+    "version": {
+        "aliases": ["v"],
+        "help": "Output version information and exit",
+    },
+    "list-all": {
+        "aliases": ["lsa"],
+        "help": "List all containers",
+    },
+    "list-stopped": {
+        "aliases": ["lss"],
+        "help": "List stopped containers",
+    },
+    "list-running": {
+        "aliases": ["lsr", "ls", "list"],
+        "help": "List currently running containers",
+    },
+    "clean": {
+        "help": "Remove hidden VM or container images",
+    },
+    "clean-all": {
+        "help": "Remove all VM or container images"
+    },
+}
+
+one_args = {
+    "info": {
+        "help": "Show properties of container",
+    },
+    "start": {
+        "help": "Start a container as system service",
+    },
+    "stop": {
+        "help": "Stop a container. Shutdown cleanly",
+    },
+    "reboot": {
+        "help": "Reboot a container",
+    },
+    "terminate": {
+        "help": "Immediately terminates container without cleanly shutting it down",
+    },
+    "poweroff": {
+        "help": "Poweroff a container. Shutdown cleanly",
+    },
+    "enable": {
+        "aliases": ["en"],
+        "help": "Enable a container as a system service at system boot",
+    },
+    "disable": {
+        "aliases": ["dis"],
+        "help": "Disable a container as a system service at system boot",
+    },
+    "remove": {
+        "aliases": ["rm"],
+        "help": "Remove a container completely",
+    },
+    "shell": {
+        "aliases": ["sh"],
+        "help": "Open an interactive shell session in a container",
+    },
+}
+
+pull_args = {
+    "pull-raw": {
+        "help": "Downloads a .raw container from the specified URL (qcow2 or compressed as gz, xz, bz2)",
+    },
+    "pull-tar": {
+        "help": "Downloads a .tar container image from the specified URL (tar, tar.gz, tar.xz, tar.bz2)",
+    },
+}
+
+import_args = {
+    "import-raw": {
+        "help": "Execute a `machinectl import-raw` to import a .qcow2 or raw disk image",
+    },
+    "import-tar": {
+        "help": "Execute a `machinectl import-tar` to import a .tar container image",
+    },
+    "import-fs": {
+        "help": "Execute a `machinectl import-fs` to import a directory image",
+    },
+}
+
+
+def parser_opts():
     """
-    Decorator that keeps track of tagged functions
+    Common parser function
     """
-    registry = {}
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers()
 
-    def registrar(func):
-        """
-        Store the function pointer
-        """
-        registry[func.__name__] = func
-        # normally a decorator returns a wrapped function,
-        # but here we return func unmodified, after registering it
-        return func
-    registrar.all = registry
-    return registrar
+    for myopt, kwargs in no_args.items():
+        sargs = [myopt]
+        sp = subparsers.add_parser(*sargs, **kwargs)
+        sp.set_defaults(func=myopt)
 
+    for myopt, kwargs in one_args.items():
+        sargs = [myopt]
+        sp = subparsers.add_parser(*sargs, **kwargs)
+        sp.add_argument("name")
+        sp.set_defaults(func=myopt)
 
-# Create the decorator
-command = makeregistrar()
+    for myopt, kwargs in pull_args.items():
+        sargs = [myopt]
+        sp = subparsers.add_parser(*sargs, **kwargs)
+        sp.add_argument("url")
+        sp.add_argument("name")
+        sp.add_argument("verify", nargs="?", const=False)
+        sp.set_defaults(func=myopt)
+
+    for myopt, kwargs in import_args.items():
+        sargs = [myopt]
+        sp = subparsers.add_parser(*sargs, **kwargs)
+        sp.add_argument("image")
+        sp.add_argument("name")
+        sp.set_defaults(func=myopt)
+
+    # rename arguments
+    sp = subparsers.add_parser("rename",
+                               help="Renames a container or VM image",
+                               )
+    sp.add_argument("name")
+    sp.add_argument("newname")
+    sp.set_defaults(func="rename")
+
+    # bootstrap arguments
+    sp = subparsers.add_parser("bootstrap",
+                               help="Bootstrap a container from package servers",
+                               )
+    sp.add_argument("name")
+    sp.add_argument("dist")
+    sp.add_argument("version", nargs="?")
+    sp.set_defaults(func="bootstrap")
+
+    # copy_to arguments
+    sp = subparsers.add_parser("copy-to",
+                               aliases=["cpt"],
+                               help="Copies files from the host system into a running container",
+                               )
+    sp.add_argument("name")
+    sp.add_argument("source")
+    sp.add_argument("dest")
+    sp.set_defaults(func="copy-to")
+
+    # exec arguments
+    sp = subparsers.add_parser("exec",
+                               help="Run a new command in a running container",
+                               )
+    sp.add_argument("name")
+    sp.add_argument("cmd")
+    sp.set_defaults(func="exec-run")
+
+    vargs = parser.parse_args()
+    return vargs
 
 
 class NspctlCmd(object):
@@ -50,15 +189,8 @@ class NspctlCmd(object):
     """
 
     def __init__(self):
-        self.parser = None
         self.cmd = None
         self.resp_string = None
-
-    def setup_parser(self, _parser):
-        """
-        Sets the class variable to what is passed in
-        """
-        self.parser = _parser
 
     def action(self, args):
         """
@@ -67,10 +199,8 @@ class NspctlCmd(object):
         if self.cmd is not None:
             return False
 
-        func = args['func']
+        self.cmd = args['func']
         del args['func']
-
-        self.cmd = func(args=args)
         self.resp_string = self.run_action(self.cmd, args)
 
         return True
@@ -79,8 +209,6 @@ class NspctlCmd(object):
         """
         Run the function from _nspctl.py
         """
-        del args['subcommand']
-
         cmd = cmd.lstrip("-").replace("-", "_")
         method = getattr(_nspctl, cmd)
         result = method(**args)
@@ -97,306 +225,23 @@ class NspctlCmd(object):
 
         return self.resp_string
 
-    @command
-    def info(self, args=None, subparsers=None):
-        """
-        Returns container information
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("info")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.info)
-            return
-        args = 'info'
-        return args
 
-    @command
-    def list_all(self, args=None, subparsers=None):
-        """
-        Returns all installed Containers
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("list-all", aliases=['lsa'])
-            sp.set_defaults(func=self.list_all)
-            return
+def nspctl_main(args=None):
+    """
+    command arguments (default: usage)
+    """
+    if args is None:
+        args = sys.argv[1:]
 
-        args = 'list-all'
-        return args
+    args = parser_opts()
+    args_map = vars(args)
 
-    @command
-    def list_running(self, args=None, subparsers=None):
-        """
-        Returns running Containers
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("list-running", aliases=['lsr', 'list'])
-            sp.set_defaults(func=self.list_running)
-            return
-
-        args = 'list-running'
-        return args
-
-    @command
-    def list_stopped(self, args=None, subparsers=None):
-        """
-        Returns stopped Containers
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("list-stopped", aliases=['lss'])
-            sp.set_defaults(func=self.list_stopped)
-            return
-
-        args = 'list-stopped'
-        return args
-
-    @command
-    def start(self, args=None, subparsers=None):
-        """
-        Start the container
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("start")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.start)
-            return
-
-        args = 'start'
-        return args
-
-    @command
-    def stop(self, args=None, subparsers=None):
-        """
-        Stop the container
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("stop")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.stop)
-            return
-
-        args = 'stop'
-        return args
-
-    @command
-    def poweroff(self, args=None, subparsers=None):
-        """
-        A clean shutdown to the container
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("poweroff")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.poweroff)
-            return
-
-        args = 'poweroff'
-        return args
-
-    @command
-    def terminate(self, args=None, subparsers=None):
-        """
-        Kill all processes in the container
-        Not a clean shutdown
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("terminate")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.terminate)
-            return
-
-        args = 'terminate'
-        return args
-
-    @command
-    def reboot(self, args=None, subparsers=None):
-        """
-        Reboot the container
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("reboot")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.reboot)
-            return
-
-        args = 'reboot'
-        return args
-
-    @command
-    def enable(self, args=None, subparsers=None):
-        """
-        Set the named container to be launched at boot
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("enable")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.enable)
-            return
-
-        args = 'enable'
-        return args
-
-    @command
-    def disable(self, args=None, subparsers=None):
-        """
-        Set the named container disable at boot
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("disable")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.disable)
-            return
-
-        args = 'disable'
-        return args
-
-    @command
-    def remove(self, args=None, subparsers=None):
-        """
-        Remove the named container
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("remove")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.remove)
-            return
-
-        args = 'remove'
-        return args
-
-    @command
-    def shell(self, args=None, subparsers=None):
-        """
-        logins container shell
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("shell")
-            sp.add_argument("name")
-            sp.set_defaults(func=self.shell)
-            return
-
-        args = 'shell'
-        return args
-
-    @command
-    def pull_raw(self, args=None, subparsers=None):
-        """
-        Execute a ``machinectl pull-raw`` to download a .qcow2 or raw disk image
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("pull-raw")
-            sp.add_argument("url")
-            sp.add_argument("name")
-            sp.add_argument("verify", nargs="?", const=False)
-            sp.set_defaults(func=self.pull_raw)
-            return
-
-        args = 'pull_raw'
-        return args
-
-    @command
-    def pull_tar(self, args=None, subparsers=None):
-        """
-        Execute a ``machinectl pull-tar`` to download a .tar container image
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("pull-tar")
-            sp.add_argument("url")
-            sp.add_argument("name")
-            sp.add_argument("verify", nargs="?", const=False)
-            sp.set_defaults(func=self.pull_tar)
-            return
-
-        args = 'pull_tar'
-        return args
-
-    @command
-    def bootstrap(self, args=None, subparsers=None):
-        """
-        Bootstrap a container from package servers
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("bootstrap")
-            sp.add_argument("name")
-            sp.add_argument("dist")
-            sp.add_argument("version", nargs="?")
-            sp.set_defaults(func=self.bootstrap)
-            return
-
-        args = 'bootstrap'
-        return args
-
-    @command
-    def copy_to(self, args=None, subparsers=None):
-        """
-        Copy a file from host in to a container
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("copy-to", aliases=['cpt'])
-            sp.add_argument("name")
-            sp.add_argument("source")
-            sp.add_argument("dest")
-            sp.set_defaults(func=self.copy_to)
-            return
-
-        args = 'copy_to'
-        return args
-
-    @command
-    def clean(self, args=None, subparsers=None):
-        """
-        Remove hidden VM or container images
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("clean")
-            sp.set_defaults(func=self.clean)
-            return
-
-        args = 'clean'
-        return args
-
-    @command
-    def clean_all(self, args=None, subparsers=None):
-        """
-        Remove all VM and container images
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("clean-all")
-            sp.set_defaults(func=self.clean_all)
-            return
-
-        args = 'clean_all'
-        return args
-
-    @command
-    def exec_run(self, args=None, subparsers=None):
-        """
-        runs a new command in a running container
-        All parameters are mandatory
-        """
-        if subparsers is not None:
-            sp = subparsers.add_parser("exec")
-            sp.add_argument("name")
-            sp.add_argument("cmd")
-            sp.set_defaults(func=self.exec_run)
-            return
-
-        args = 'exec_run'
-        return args
+    if not args_map or args_map['func'] in ('usage', None):
+        nspctl_usage()
+    elif args_map['func'] == "version":
+        print(__version__ + "\n")
+    else:
+        nsp = NspctlCmd()
+        nsp.action(args_map)
+        rev = nsp.get_result()
+        print(rev)

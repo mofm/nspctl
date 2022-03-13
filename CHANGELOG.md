@@ -11,11 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - added clean. clean all hidden vm and container images
 - added clean-all. clean all installed vm and container images
 - added exec. runs a new command in a running container
+- added rename. renames a container or VM image
+- added import-fs, import-raw, import-tar 
 
 ### Changed
 
 - version number changed to dev1
 - removed pull-dkr feature. no longer supported by machinectl
+- rewritten main.py (NspctlCmd class has too many methods)
 
 ### Fixed
 

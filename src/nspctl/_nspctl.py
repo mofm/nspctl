@@ -770,6 +770,7 @@ def _pull_image(img_type, image, name, **kwargs):
     return True
 
 
+@_check_useruid
 def pull_raw(url, name, verify=False):
     """
     Execute a ``machinectl pull-raw`` to download a .qcow2 or raw disk image,
@@ -778,6 +779,7 @@ def pull_raw(url, name, verify=False):
     return _pull_image("raw", url, name, verify=verify)
 
 
+@_check_useruid
 def pull_tar(url, name, verify=False):
     """
     Execute a ``machinectl pull-tar`` to download a .tar container image,
@@ -865,3 +867,89 @@ def exec_run(name, cmd):
 
 # alias to exec_run
 alias_exec = alias_function(exec_run, "exec")
+
+
+@_ensure_exists
+@_check_useruid
+def rename(name, newname, stop=False):
+    """
+    Renames a container or VM image
+    """
+    if not stop and state(name) != "stopped":
+        raise Exception("Container '{}' is not stopped. Please first stop the container".format(name))
+
+    def _failed_rename(name, exc):
+        raise Exception("Unable to rename container '{}': {}".format(name, exc))
+
+    if _sd_version() >= 219:
+        ret = _machinectl("rename {} {}".format(name, newname))
+        if ret["returncode"] != 0:
+            _failed_rename(name, ret["stderr"])
+    else:
+        if exists(newname):
+            raise Exception("Container '{}' already exists".format(newname))
+        try:
+            os.rename(_root(name=name), os.path.join(_root(), newname))
+        except OSError as exc:
+            _failed_rename(name, exc)
+
+    return True
+
+
+def _import_image(img_type, image, name):
+    """
+    Common logic function for importing images
+    """
+    _ensure_systemd(219)
+    if exists(name):
+        raise Exception("Container '{}' already exists".format(name))
+
+    if img_type == "fs":
+        if not os.path.exists(image):
+            raise Exception("Image directory '{}' does not exist".format(image))
+        elif not os.path.isdir(image):
+            raise Exception("Image source must be directory")
+    elif img_type in ("raw", "tar"):
+        pass
+    else:
+        raise Exception("Unsupported image type '{}'".format(img_type))
+
+    cmd = "import-{} {} {}".format(img_type, image, name)
+    ret = _machinectl(cmd)
+    if ret["returncode"] != 0:
+        msg = (
+            "Error occurred while importing image. Stderr from the import command"
+            "(if any) follows:"
+        )
+        if ret["stderr"]:
+            msg += "\n\n{}".format(ret["stderr"])
+        raise Exception(msg)
+
+    return True
+
+
+@_check_useruid
+def import_raw(image, name):
+    """
+    Execute a ``machinectl import-raw`` to import a .qcow2 or raw disk image,
+    and add it to /var/lib/machines as a new container.
+    """
+    return _import_image("raw", image, name)
+
+
+@_check_useruid
+def import_tar(image, name):
+    """
+    Execute a ``machinectl import-tar`` to import a .tar container image,
+    and add it to /var/lib/machines as a new container.
+    """
+    return _import_image("tar", image, name)
+
+
+@_check_useruid
+def import_fs(directory, name):
+    """
+    Execute a ``machinectl import-fs`` to import a directory image,
+    and add it to /var/lib/machines as a new container.
+    """
+    return _import_image("fs", directory, name)
