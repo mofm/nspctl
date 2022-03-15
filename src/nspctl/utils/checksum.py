@@ -50,7 +50,7 @@ class _generate_hash_function:
                 size = size + len(data)
                 data = f.read(blocksize)
 
-        return (checksum.hexdigest(), size)
+        return checksum.hexdigest(), size
 
 
 _generate_hash_function("MD5", hashlib.md5, origin="hashlib")
@@ -62,9 +62,10 @@ _generate_hash_function("SHA512", hashlib.sha512, origin="hashlib")
 class SizeHash:
     def checksum_file(self, filename):
         size = os.stat(filename).st_size
-        return (size, size)
+        return size, size
 
 
+hashfunc_map["size"] = SizeHash()
 hashfunc_keys = frozenset(hashfunc_map)
 
 
@@ -80,3 +81,67 @@ def perform_checksum(filename, hashname="MD5"):
             raise Exception("{} : Permission denied".format(filename))
         raise
     return myhash, mysize
+
+
+def verify_all(filename, mydict, strict=0):
+    file_is_ok = True
+    reason = "Reason unknown"
+    try:
+        mysize = os.stat(filename)[stat.ST_SIZE]
+        if mydict.get("size") is not None and mydict["size"] != mysize:
+            return False, (
+                "Filesize does not match recorded size",
+                mysize,
+                mydict["size"],
+            )
+    except OSError as exc:
+        if exc.errno == errno.ENOENT:
+            raise Exception("{}: File not found".format(filename))
+        return False, (str(exc), None, None)
+
+    verifiable_hash_types = set(mydict).intersection(hashfunc_keys)
+    verifiable_hash_types.discard("size")
+    if not verifiable_hash_types:
+        expected = set(hashfunc_keys)
+        expected.discard("size")
+        expected = list(expected)
+        expected.sort()
+        expected = " ".join(expected)
+        got = set(mydict)
+        got.discard("size")
+        got = list(got)
+        got.sort()
+        got = " ".join(got)
+        return False, ("Insufficient data for checksum verification", got, expected)
+
+    for x in sorted(mydict):
+        if x == "size":
+            continue
+        elif x in hashfunc_keys:
+            myhash = perform_checksum(filename, x)[0]
+            if mydict[x] != myhash:
+                if strict:
+                    raise Exception(
+                        ("Failed to verify {} on " + "checksum type '{}'".format(filename, x))
+                    )
+                else:
+                    file_is_ok = False
+                    reason = (("Failed on {} verification".format(x)), myhash, mydict[x])
+                    break
+
+    return file_is_ok, reason
+
+
+def perform_md5(filename):
+    return perform_checksum(filename, "MD5")[0]
+
+
+def perform_sha256(filename):
+    return perform_checksum(filename, "SHA256")[0]
+
+
+def perform_all(filename):
+    mydict = {}
+    for k in hashfunc_keys:
+        mydict[k] = perform_checksum(filename, k)[0]
+    return mydict
