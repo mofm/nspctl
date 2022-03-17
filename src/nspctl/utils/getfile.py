@@ -158,7 +158,7 @@ def file_get(baseurl=None, dest=None, conn=None, filename=None):
 
     if fetch != os.EX_OK:
         sys.stderr.write("Fetcher exited with a failure condition.\n")
-        return 0
+        return 1
     else:
         sys.stderr.write("Download completed!\n")
         return 0

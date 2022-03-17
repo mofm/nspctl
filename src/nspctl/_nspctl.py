@@ -4,6 +4,7 @@ import os
 import re
 import functools
 import shutil
+import tempfile
 
 from .utils.systemd import systemd_version
 from .utils.cmd import run_cmd, popen
@@ -12,6 +13,10 @@ from .utils.container_resource import cont_run, cont_cpt, con_init, login_shell
 from .utils.path import which
 from .lib.functools import alias_function
 from .utils.user import get_uid
+from .utils.platform import get_arch
+from .utils.getfile import file_get
+from .utils.tar import tar_extract
+from .utils.checksum import checksum_url, parse_checksum, verify_all
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +127,79 @@ def _bootstrap_arch(name, **kwargs):
     return ret["stdout"]
 
 
+def _bootstrap_alpine(name, **kwargs):
+    """
+    Boostrap an Alpine Linux container
+    """
+    releases = [
+        "v3.13",
+        "v3.14",
+        "v3.15",
+        "latest-stable",
+    ]
+
+    version = kwargs.get("version", False)
+    if not version or version == "latest-stable":
+        version = max(releases)
+
+    if version not in releases:
+        raise Exception(
+            'Unsupported Alpine version "{}". '
+            'Only "latest-stable" or "v3.13" and newer are supported'.format(version)
+        )
+    mirror = "https://dl-cdn.alpinelinux.org/alpine/"
+    arch = get_arch()
+    base_url = mirror + version + "/releases/" + arch + "/"
+    temp_dir = tempfile.mkdtemp()
+
+    def getlastversion():
+        yaml = "latest-releases.yaml"
+        yaml_url = base_url + yaml
+        fetch_yaml = file_get(yaml_url, temp_dir)
+        if fetch_yaml == 0:
+            with open(os.path.join(temp_dir, yaml), "r") as f:
+                data = f.read()
+        regex = r"alpine-minirootfs-.+"
+        matches = re.findall(regex, data, re.MULTILINE)
+        if matches:
+            return matches[0]
+
+    if getlastversion():
+        rootfs_version = getlastversion()
+    else:
+        raise Exception("Rootfs version not found")
+
+    rootfs_url = base_url + rootfs_version
+    sums_url = checksum_url(rootfs_version, "SHA256")
+    try:
+        fetch_rootfs = file_get(rootfs_url, temp_dir)
+        if fetch_rootfs == 0:
+            for file in sums_url:
+                new_url = base_url + file
+                conn = file_get(new_url, temp_dir)
+                if conn == 0:
+                    sum_file = file
+
+            my_dict = {}
+            chksum = parse_checksum(rootfs_version, os.path.join(temp_dir, sum_file))
+            my_dict.update({"SHA256": chksum})
+            temp_path = os.path.join(temp_dir, rootfs_version)
+            verify = verify_all(temp_path, my_dict)
+            if verify[0] is True:
+                dest = _make_container_root(name)
+                tar_extract(temp_path, dest)
+                return True
+            else:
+                raise Exception("'{}': The checksum format is invalid".format(rootfs_version))
+    except Exception as exc:
+        _build_failed(dest, name)
+        raise Exception(str(exc)) from None
+    finally:
+        shutil.rmtree(temp_dir)
+
+    return True
+
+
 def _bootstrap_debian(name, **kwargs):
     """
     Bootstrap a Debian Linux container
@@ -197,6 +275,7 @@ def bootstrap_container(name, dist=None, version=None):
         "debian",
         "ubuntu",
         "arch",
+        "alpine",
     ]
 
     if dist not in distro and dist is None:

@@ -2,6 +2,7 @@ import errno
 import functools
 import hashlib
 import os
+import re
 import stat
 
 hashfunc_map = {}
@@ -72,7 +73,7 @@ hashfunc_keys = frozenset(hashfunc_map)
 def perform_checksum(filename, hashname="MD5"):
     try:
         if hashname not in hashfunc_keys:
-            raise Exception("{} ,hash function not available".format(hashname))
+            raise Exception("{} , hash function not available".format(hashname))
         myhash, mysize = hashfunc_map[hashname].checksum_file(filename)
     except (OSError, IOError) as exc:
         if exc.errno in (errno.ENOENT, errno.ESTALE):
@@ -90,7 +91,7 @@ def verify_all(filename, mydict, strict=0):
         mysize = os.stat(filename)[stat.ST_SIZE]
         if mydict.get("size") is not None and mydict["size"] != mysize:
             return False, (
-                "Filesize does not match recorded size",
+                "File size does not match recorded size",
                 mysize,
                 mydict["size"],
             )
@@ -122,7 +123,8 @@ def verify_all(filename, mydict, strict=0):
             if mydict[x] != myhash:
                 if strict:
                     raise Exception(
-                        ("Failed to verify {} on " + "checksum type '{}'".format(filename, x))
+                        ("Failed to verify '$(file)s' on " + "checksum type '%(type)s'")
+                        % {"file": filename, "type": x}
                     )
                 else:
                     file_is_ok = False
@@ -145,3 +147,57 @@ def perform_all(filename):
     for k in hashfunc_keys:
         mydict[k] = perform_checksum(filename, k)[0]
     return mydict
+
+
+def get_valid_checksum_keys():
+    return hashfunc_keys
+
+
+def get_hash_origin(hashtype):
+    if hashtype not in hashfunc_keys:
+        raise KeyError(hashtype)
+    return hashorigin_map.get(hashtype, "unknown")
+
+
+def checksum_url(filename, hashname):
+    if hashname not in hashfunc_keys:
+        raise Exception("{} , hash does not supported".format(hashname))
+    else:
+        return [filename + "." + hashname.lower(), hashname.upper() + "SUMS"]
+
+
+def parse_checksum(filename, sumsfile):
+    if not os.path.exists(sumsfile):
+        raise Exception("Checksum file {} does not exist".format(sumsfile))
+    elif not os.path.isfile(sumsfile):
+        raise Exception("Checksum file must be regular file")
+    else:
+        with open(sumsfile) as f:
+            lines = [line.rstrip('\n') for line in f]
+        checksum_map = []
+        for line in lines:
+            parts = line.split(" ", 1)
+            if len(parts) == 2:
+                if parts[1].startswith((" ", "*",)):
+                    parts[1] = parts[1][1:]
+
+                checksum_map.append((parts[0], parts[1].lstrip("./")))
+
+    for cksum in (s for (s, f) in checksum_map if f == filename):
+        checksum = cksum
+        break
+    else:
+        checksum = None
+
+    if checksum is None:
+        raise Exception("Unable to find a checksum for file '{}' in '{}'".format(filename, sumsfile))
+
+    checksum = re.sub(r'\W', '', checksum).lower()
+    try:
+        int(checksum, 16)
+    except ValueError:
+        raise Exception("The checksum format is invalid")
+    finally:
+        os.remove(sumsfile)
+
+    return checksum
