@@ -36,10 +36,12 @@ nspctl supports containers with any init system. nspctl provides almost all of t
 * Bootstrap **Debian** container ("jessie" and newer are supported)
 * Bootstrap **Ubuntu** container ("xenial" and newer are supported)
 * Bootstrap **Arch Linux** container
+* Bootstrap **Alpine Linux** container
 * Remove hidden VM or container images
 * Remove all VM and container images
 * Run a new command in a running container (non-interactive shell)
 * Renames a container or VM image
+* import raw, tar and directory container images
 
 Installation
 ############
@@ -286,6 +288,7 @@ Container Operations:
 
 .. code-block::
 
+    $ nspctl bootstrap alpine-3.15 alpine latest-stable
     $ nspctl bootstrap ubuntu-20.04 ubuntu focal
     $ nspctl bootstrap debian-latest debian stable
     $ nspctl bootstrap arch-test arch

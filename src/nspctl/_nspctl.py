@@ -153,6 +153,7 @@ def _bootstrap_alpine(name, **kwargs):
     temp_dir = tempfile.mkdtemp()
 
     def getlastversion():
+        reason = "unknown"
         yaml = "latest-releases.yaml"
         yaml_url = base_url + yaml
         fetch_yaml = file_get(yaml_url, temp_dir)
@@ -162,10 +163,13 @@ def _bootstrap_alpine(name, **kwargs):
         regex = r"alpine-minirootfs-.+"
         matches = re.findall(regex, data, re.MULTILINE)
         if matches:
-            return matches[0]
+            return True, matches[0]
+        else:
+            return False, reason
 
-    if getlastversion():
-        rootfs_version = getlastversion()
+    result = getlastversion()
+    if result[0]:
+        rootfs_version = result[1]
     else:
         raise Exception("Rootfs version not found")
 

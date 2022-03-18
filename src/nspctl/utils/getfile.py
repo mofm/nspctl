@@ -22,8 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 def create_conn(baseurl, conn=None):
-    """Create connections"""
-
+    """
+    Create connections
+    """
     parts = baseurl.split("://", 1)
     if len(parts) != 2:
         raise ValueError(
@@ -90,8 +91,9 @@ def create_conn(baseurl, conn=None):
 
 
 def make_http_request(conn, address, _params={}, headers={}, dest=None):
-    """Uses the |conn| object to request the data"""
-
+    """
+    Uses the |conn| object to request the data
+    """
     rc = 0
     response = None
     while (rc == 0) or (rc == 301) or (rc == 302):
@@ -144,9 +146,10 @@ def make_http_request(conn, address, _params={}, headers={}, dest=None):
 
 
 def file_get(baseurl=None, dest=None, conn=None, filename=None):
-    """Takes a base url to connect to and read from.
-    URL should be in the form <proto>://<site>[:port]<path>"""
-
+    """
+    Takes a base url to connect to and read from.
+    URL should be in the form <proto>://<site>[:port]<path>
+    """
     if not os.path.isdir(dest):
         os.mkdir(dest)
 
@@ -157,18 +160,20 @@ def file_get(baseurl=None, dest=None, conn=None, filename=None):
     fetch = file_get_lib(baseurl, dest, conn)
 
     if fetch != os.EX_OK:
-        sys.stderr.write("Fetcher exited with a failure condition.\n")
+        logger.error("Fetcher exited with a failure condition.\n")
         return 1
     else:
-        sys.stderr.write("Download completed!\n")
+        logger.info("Download completed!\n")
         return 0
+
     return 1
 
 
 def file_get_lib(baseurl, dest, conn=None):
-    """Takes a base url to connect to and read from.
-    URL should be in the form <proto>://<site>[:port]<path>"""
-
+    """
+    Takes a base url to connect to and read from.
+    URL should be in the form <proto>://<site>[:port]<path>
+    """
     if not conn:
         keepconnection = 0
     else:
@@ -176,7 +181,7 @@ def file_get_lib(baseurl, dest, conn=None):
 
     conn, protocol, address, params, headers = create_conn(baseurl, conn)
 
-    sys.stderr.write("Fetching '" + str(os.path.basename(address)) + "'\n")
+    logger.debug("Fetching '" + str(os.path.basename(address)) + "'\n")
     if protocol in ["http", "https"]:
         data, rc, _msg = make_http_request(conn, address, params, headers, dest=dest)
     else:

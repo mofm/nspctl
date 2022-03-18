@@ -10,6 +10,9 @@ hashorigin_map = {}
 
 
 def _open_file(filename):
+    """
+    Common open file function
+    """
     try:
         return open(
             filename, "rb"
@@ -27,6 +30,9 @@ def _open_file(filename):
 
 
 class _generate_hash_function:
+    """
+    Generate a hash function
+    """
 
     __slots__ = ("_hashobject",)
 
@@ -54,6 +60,7 @@ class _generate_hash_function:
         return checksum.hexdigest(), size
 
 
+# Define hash functions, try to use the best module available.
 _generate_hash_function("MD5", hashlib.md5, origin="hashlib")
 _generate_hash_function("SHA1", hashlib.sha1, origin="hashlib")
 _generate_hash_function("SHA256", hashlib.sha256, origin="hashlib")
@@ -61,16 +68,23 @@ _generate_hash_function("SHA512", hashlib.sha512, origin="hashlib")
 
 
 class SizeHash:
+    """
+    Size implementation class
+    """
     def checksum_file(self, filename):
         size = os.stat(filename).st_size
         return size, size
 
 
 hashfunc_map["size"] = SizeHash()
+# cache all supported hash methods in a frozenset
 hashfunc_keys = frozenset(hashfunc_map)
 
 
 def perform_checksum(filename, hashname="MD5"):
+    """
+    Run a specific checksum against a file
+    """
     try:
         if hashname not in hashfunc_keys:
             raise Exception("{} , hash function not available".format(hashname))
@@ -85,6 +99,9 @@ def perform_checksum(filename, hashname="MD5"):
 
 
 def verify_all(filename, mydict, strict=0):
+    """
+    Verify all checksums against a file
+    """
     file_is_ok = True
     reason = "Reason unknown"
     try:
@@ -135,14 +152,23 @@ def verify_all(filename, mydict, strict=0):
 
 
 def perform_md5(filename):
+    """
+    Shortcut for performing md5 checksum
+    """
     return perform_checksum(filename, "MD5")[0]
 
 
 def perform_sha256(filename):
+    """
+    Shortcut for performing sha256 checksum
+    """
     return perform_checksum(filename, "SHA256")[0]
 
 
 def perform_all(filename):
+    """
+    Performing for all verifiable_hash_types
+    """
     mydict = {}
     for k in hashfunc_keys:
         mydict[k] = perform_checksum(filename, k)[0]
@@ -150,16 +176,25 @@ def perform_all(filename):
 
 
 def get_valid_checksum_keys():
+    """
+    Return valid checksum keys
+    """
     return hashfunc_keys
 
 
 def get_hash_origin(hashtype):
+    """
+    Return hash origin map
+    """
     if hashtype not in hashfunc_keys:
         raise KeyError(hashtype)
     return hashorigin_map.get(hashtype, "unknown")
 
 
 def checksum_url(filename, hashname):
+    """
+    Return possible checksum url list
+    """
     if hashname not in hashfunc_keys:
         raise Exception("{} , hash does not supported".format(hashname))
     else:
@@ -167,6 +202,10 @@ def checksum_url(filename, hashname):
 
 
 def parse_checksum(filename, sumsfile):
+    """
+    Look through each line in the checksum file for a hash,
+    returning the first hash that is found
+    """
     if not os.path.exists(sumsfile):
         raise Exception("Checksum file {} does not exist".format(sumsfile))
     elif not os.path.isfile(sumsfile):

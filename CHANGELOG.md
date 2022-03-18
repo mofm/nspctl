@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - added clean-all. clean all installed vm and container images
 - added exec. runs a new command in a running container
 - added rename. renames a container or VM image
-- added import-fs, import-raw, import-tar 
+- added import-fs, import-raw, import-tar
+- added bootstrap alpine linux container
 
 ### Changed
 
