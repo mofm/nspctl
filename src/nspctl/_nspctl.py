@@ -152,7 +152,7 @@ def _bootstrap_alpine(name, **kwargs):
     base_url = mirror + version + "/releases/" + arch + "/"
     temp_dir = tempfile.mkdtemp()
 
-    def getlastversion():
+    def _getlastversion():
         reason = "unknown"
         yaml = "latest-releases.yaml"
         yaml_url = base_url + yaml
@@ -167,7 +167,7 @@ def _bootstrap_alpine(name, **kwargs):
         else:
             return False, reason
 
-    result = getlastversion()
+    result = _getlastversion()
     if result[0]:
         rootfs_version = result[1]
     else:
@@ -183,7 +183,6 @@ def _bootstrap_alpine(name, **kwargs):
                 conn = file_get(new_url, temp_dir)
                 if conn == 0:
                     sum_file = file
-
             my_dict = {}
             chksum = parse_checksum(rootfs_version, os.path.join(temp_dir, sum_file))
             my_dict.update({"SHA256": chksum})
@@ -192,7 +191,17 @@ def _bootstrap_alpine(name, **kwargs):
             if verify[0] is True:
                 dest = _make_container_root(name)
                 tar_extract(temp_path, dest)
-                return True
+                init_path = os.path.join(dest, "etc/inittab")
+                if os.path.exists(init_path):
+                    temp_init = tempfile.mkstemp(dir=temp_dir)
+                    temp = open(temp_init[1], "w")
+                    with open(init_path, "r") as f:
+                        inittab = f.read()
+                    new_inittab = re.sub("(^tty[0-9])", r"#\1", inittab, flags=re.M)
+                    temp.write(new_inittab)
+                    temp.close()
+                    shutil.move(temp_init[1], init_path)
+                    return True
             else:
                 raise Exception("'{}': The checksum format is invalid".format(rootfs_version))
     except Exception as exc:
