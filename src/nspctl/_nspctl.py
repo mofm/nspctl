@@ -147,6 +147,7 @@ def _bootstrap_alpine(name, **kwargs):
             'Unsupported Alpine version "{}". '
             'Only "latest-stable" or "v3.13" and newer are supported'.format(version)
         )
+    dest = _make_container_root(name)
     mirror = "https://dl-cdn.alpinelinux.org/alpine/"
     arch = get_arch()
     base_url = mirror + version + "/releases/" + arch + "/"
@@ -167,15 +168,17 @@ def _bootstrap_alpine(name, **kwargs):
         else:
             return False, reason
 
-    result = _getlastversion()
-    if result[0]:
-        rootfs_version = result[1]
-    else:
-        raise Exception("Rootfs version not found")
-
-    rootfs_url = base_url + rootfs_version
-    sums_url = checksum_url(rootfs_version, "SHA256")
     try:
+        # get last alpine release version
+        result = _getlastversion()
+        if result[0]:
+            rootfs_version = result[1]
+        else:
+            raise Exception("Rootfs version not found")
+
+        rootfs_url = base_url + rootfs_version
+        # get checksum url for data integrity
+        sums_url = checksum_url(rootfs_version, "SHA256")
         fetch_rootfs = file_get(rootfs_url, temp_dir)
         if fetch_rootfs == 0:
             for file in sums_url:
@@ -187,9 +190,9 @@ def _bootstrap_alpine(name, **kwargs):
             chksum = parse_checksum(rootfs_version, os.path.join(temp_dir, sum_file))
             my_dict.update({"SHA256": chksum})
             temp_path = os.path.join(temp_dir, rootfs_version)
+            # verify file checksum
             verify = verify_all(temp_path, my_dict)
             if verify[0] is True:
-                dest = _make_container_root(name)
                 tar_extract(temp_path, dest)
                 init_path = os.path.join(dest, "etc/inittab")
                 if os.path.exists(init_path):
@@ -197,6 +200,7 @@ def _bootstrap_alpine(name, **kwargs):
                     temp = open(temp_init[1], "w")
                     with open(init_path, "r") as f:
                         inittab = f.read()
+                    # comment out the tty[0-9] lines in the inittab file
                     new_inittab = re.sub("(^tty[0-9])", r"#\1", inittab, flags=re.M)
                     temp.write(new_inittab)
                     temp.close()
