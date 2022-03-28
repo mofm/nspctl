@@ -42,7 +42,6 @@ class Bridge(netbase.Interface):
     def listif(self):
         """
         List interface names
-        :return:
         """
         return [p for p in self.iterifs()]
 
@@ -129,6 +128,9 @@ def addbr(name):
     Create new bridge with the given name
     """
     fcntl.ioctl(netbase.sockfd, SIOCBRADDBR, name)
+    ifc = netbase.Interface(name)
+    if not ifc.is_up():
+        ifc.up()
     return Bridge(name)
 
 
