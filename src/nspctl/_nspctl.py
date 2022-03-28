@@ -161,6 +161,8 @@ def _bootstrap_alpine(name, **kwargs):
         if fetch_yaml == 0:
             with open(os.path.join(temp_dir, yaml), "r") as f:
                 data = f.read()
+        else:
+            raise Exception("Latest release is not available")
         regex = r"alpine-minirootfs-.+"
         matches = re.findall(regex, data, re.MULTILINE)
         if matches:

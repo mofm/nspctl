@@ -284,7 +284,7 @@ Container Operations:
     $ nspctl import-fs econ-tiny-nginx-20220123 econ-httpd
 
 
-- *bootstrap NAME DIST VERSION* : Bootstrap a container from package servers. Supported Distributions are Debian, Ubuntu and Arch Linux.
+- *bootstrap NAME DIST VERSION* : Bootstrap a container from package servers. Supported Distributions are Debian, Ubuntu, Arch Linux and Alpine Linux.
 
 .. code-block::
 
