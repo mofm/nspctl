@@ -69,7 +69,7 @@ class Interface(object):
     Common class for Linux network devices
     """
     def __init__(self, name):
-        self.name = name.encode()
+        self.name = name
 
     def __repr__(self):
         return "<{} {} at 0x{}>".format(self.__class__.__name__, self.name, id(self))
