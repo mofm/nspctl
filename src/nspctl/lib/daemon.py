@@ -38,8 +38,8 @@ class Daemon(object):
             if pid > 0:
                 # Exit first parent.
                 sys.exit(0)
-        except OSError as e:
-            logger.error("Fork #1 failed: '{}'".format(e))
+        except OSError as exc:
+            logger.error("Fork #1 failed: '{}'".format(exc))
             sys.exit(1)
         # Decouple from the parent environment.
         os.chdir("/")
@@ -51,8 +51,8 @@ class Daemon(object):
             if pid > 0:
                 # Exit from second parent.
                 sys.exit(0)
-        except OSError as e:
-            logger.error("Fork #2 failed: '{}'".format(e))
+        except OSError as exc:
+            logger.error("Fork #2 failed: '{}'".format(exc))
             sys.exit(1)
         logger.debug("The daemon process is going to background")
         # Redirect standard file descriptors.
@@ -159,8 +159,8 @@ class Daemon(object):
                 while self._canDaemonRun:
                     self.run()
             return True
-        except Exception as e:
-            logger.error("Run method failed: {}".format(e))
+        except Exception as exc:
+            logger.error("Run method failed: {}".format(exc))
             sys.exit(1)
 
     # this method you have to override
