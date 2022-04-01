@@ -2,7 +2,7 @@ from ..lib.daemon import Daemon
 from ..net.dhcp import DHCPServer
 
 
-class DHCPService:
+class DHCPService(Daemon):
     """
     DHCPServer run method class
     """
@@ -11,7 +11,7 @@ class DHCPService:
         dserv.listen()
 
 
-dhdaemon = Daemon(DHCPService)
+dhdaemon = DHCPService()
 
 
 def dhcp_start():

@@ -24,9 +24,9 @@ def rmmod(mod):
     cmd = "rmmod {}".format(mod)
     exe_cmd = run_cmd(cmd, is_shell=True)
     if exe_cmd["returncode"] == 0:
-        return exe_cmd["stdout"]
+        return True
     else:
-        return exe_cmd["stderr"]
+        return False
 
 
 def modprobe(mod):
@@ -36,9 +36,9 @@ def modprobe(mod):
     cmd = "modprobe {}".format(mod)
     exe_cmd = run_cmd(cmd, is_shell=True)
     if exe_cmd["returncode"] == 0:
-        return exe_cmd["stdout"]
+        return True
     else:
-        return exe_cmd["stderr"]
+        return False
 
 
 def sysctlset(name, limit):

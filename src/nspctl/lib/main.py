@@ -7,6 +7,7 @@ from ..utils.systemd import systemd_booted, systemd_version
 from .output import nprint
 from .. import _nspctl, __version__
 from .usage import nspctl_usage
+from .initial import initialize
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,10 @@ no_args = {
         "help": "Remove hidden VM or container images",
     },
     "clean-all": {
-        "help": "Remove all VM or container images"
+        "help": "Remove all VM or container images",
+    },
+    "initial": {
+        "help": "Initialize nspctl processes",
     },
 }
 
@@ -240,6 +244,8 @@ def nspctl_main(args=None):
         nspctl_usage()
     elif args_map['func'] == "version":
         print(__version__ + "\n")
+    elif args_map['func'] == "initial":
+        initialize()
     else:
         nsp = NspctlCmd()
         nsp.action(args_map)
