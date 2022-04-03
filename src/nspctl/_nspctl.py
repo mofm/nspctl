@@ -668,10 +668,14 @@ def stop(name, kill=False):
     else:
         # systemd-nspawn does not stop another init system.
         # or "systemctl stop" command gives timeout.
+        # so we call clean shutdown and terminate exit status
+        # if we execute "poweroff -f", exit status 137
         cmd = "poweroff"
         ret = run(name, cmd)
 
-    if ret["returncode"] != 0:
+    # command exit codes:
+    # terminate -> 143, kill -> 137
+    if ret["returncode"] not in (0, 143):
         return False
 
     return True
@@ -732,7 +736,9 @@ def reboot(name):
     else:
         return start(name)
 
-    if ret["returncode"] != 0:
+    # command exit codes:
+    # terminate -> 143, kill -> 137
+    if ret["returncode"] not in (0, 143):
         return False
 
     return True

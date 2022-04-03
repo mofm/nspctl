@@ -36,7 +36,7 @@ nspctl supports containers with any init system. nspctl provides almost all of t
 * Bootstrap **Debian** container ("jessie" and newer are supported)
 * Bootstrap **Ubuntu** container ("xenial" and newer are supported)
 * Bootstrap **Arch Linux** container
-* Bootstrap **Alpine Linux** container
+* Bootstrap **Alpine Linux** container("v3.13" and newer are supported)
 * Remove hidden VM or container images
 * Remove all VM and container images
 * Run a new command in a running container (non-interactive shell)
@@ -293,6 +293,11 @@ Container Operations:
     $ nspctl bootstrap debian-latest debian stable
     $ nspctl bootstrap arch-test arch
 
+
+Help
+####
+
+If you run into any problems, please open an issue so it can fixed.
 
 Roadmap
 ########
