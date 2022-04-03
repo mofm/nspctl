@@ -19,7 +19,6 @@ class Process(object):
     def parse_stat_file(self):
         """
         Return Process Stat File objects
-        :return:
         """
         with open("%s/%s/stat" % (PROCFS_PATH, self.pid), "rb", buffering=FILE_READ_BUFFER_SIZE) as f:
             data = f.read()

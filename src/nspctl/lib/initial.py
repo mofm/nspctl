@@ -1,8 +1,10 @@
+import logging
 from ..net import netbase
 from ..net.bridge import addbr, findbridge
 from ..utils.sysctl import lsmod, modprobe, sysctlset
-from ..services.dhcpd import dhcp_start
+from ..services.dhcpd import dhcp_start, dhcp_status
 
+logger = logging.getLogger(__name__)
 
 # convert string to bytes
 BRNAME = "nspctl0".encode()
@@ -19,21 +21,20 @@ def initialbridge():
 
     if not findbridge(BRNAME):
         addbr(BRNAME)
+        brint = netbase.Interface(BRNAME)
+        # add new ip address to interface
+        brint.set_ip(NEWIP)
+        # set new netmask
+        brint.set_netmask(NETMASK)
+        # shutdown netbase library
+        netbase.shutdown()
     else:
-        raise Exception("bridge interface already exists: '{}'".format(BRNAME))
-
-    brint = netbase.Interface(BRNAME)
-    # add new ip address to interface
-    brint.set_ip(NEWIP)
-    # set new netmask
-    brint.set_netmask(NETMASK)
-    # shutdown netbase library
-    netbase.shutdown()
+        logger.warning("bridge interface already exists: {}".format(BRNAME))
 
 
 def initialsys():
     """
-    Initial system wide configuration
+    Initial system-wide configuration
     """
     mods = lsmod()
     for i in KMODULES:
@@ -52,6 +53,9 @@ def initialize():
     try:
         initialbridge()
         initialsys()
-        dhcp_start()
+        if not dhcp_status():
+            dhcp_start()
+        else:
+            logger.warning("DHCP Service already running!")
     except Exception as exc:
         raise Exception("Initialization failed: {}".format(exc))

@@ -18,7 +18,7 @@ class Daemon(object):
         self.waitToHardKill = 3
         self.isReloadSignal = False
         self._canDaemonRun = True
-        self.processName = os.path.basename(sys.argv[0])
+        self.processName = sys.argv[0]
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
@@ -70,8 +70,11 @@ class Daemon(object):
 
         for p in pids():
             _proc = Process(p)
-            if self.processName in _proc.cmdline():
-                if p != os.getpid():
+            _cmdline = _proc.cmdline()
+            if self.processName in _cmdline:
+                # sudo forks the given command,
+                # so we need to ignore parent sudo process.
+                if p != os.getpid() and "sudo" not in _cmdline:
                     procs.append(p)
 
         return procs
