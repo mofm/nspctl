@@ -248,21 +248,22 @@ class DHCPServer:
         """
         Main listen method
         """
-        message, address = self.sock.recvfrom(1024)
-        [client_mac] = struct.unpack('!28x6s', message[:34])
-        self.options[client_mac] = self.tlv_parse(message[240:])
+        while True:
+            message, address = self.sock.recvfrom(1024)
+            [client_mac] = struct.unpack('!28x6s', message[:34])
+            self.options[client_mac] = self.tlv_parse(message[240:])
 
-        if not self.validate_req(client_mac):
-            pass
-        dhtype = ord(self.options[client_mac][53][0])
-        if dhtype == TYPE_53_DHCPDISCOVER:
-            logger.debug('Sending DHCPOFFER to {0}'.format(self.get_mac(client_mac)))
-            try:
-                self.dhcp_offer(message)
-            except OutOfLeasesError:
-                logger.critical('Ran out of leases')
-        elif dhtype == TYPE_53_DHCPREQUEST:
-            logger.debug('Sending DHCPACK to {0}'.format(self.get_mac(client_mac)))
-            self.dhcp_ack(message)
-        else:
-            logger.debug('Unhandled DHCP message type {0} from {1}'.format(dhtype, self.get_mac(client_mac)))
+            if not self.validate_req(client_mac):
+                pass
+            dhtype = ord(self.options[client_mac][53][0])
+            if dhtype == TYPE_53_DHCPDISCOVER:
+                logger.debug('Sending DHCPOFFER to {0}'.format(self.get_mac(client_mac)))
+                try:
+                    self.dhcp_offer(message)
+                except OutOfLeasesError:
+                    logger.critical('Ran out of leases')
+            elif dhtype == TYPE_53_DHCPREQUEST:
+                logger.debug('Sending DHCPACK to {0}'.format(self.get_mac(client_mac)))
+                self.dhcp_ack(message)
+            else:
+                logger.debug('Unhandled DHCP message type {0} from {1}'.format(dhtype, self.get_mac(client_mac)))
