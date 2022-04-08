@@ -79,11 +79,16 @@ class NsEnter(object):
 
 
 def _is_usable_namespace(target, ns_type):
+    """
+    Check target namespace
+    """
     ns_path = lambda t, n: os.path.join("/proc", t, "ns", n)
 
     if not os.path.exists(ns_path(target, ns_type)):
         return False
 
+    # It is not permitted to use setns(2) to reenter the caller's
+    # current user namespace; see setns(2) man page for more details.
     if ns_type == "user":
         if os.stat(ns_path(target, ns_type)).st_ino == os.stat(ns_path("self", ns_type)).st_ino:
             return False
