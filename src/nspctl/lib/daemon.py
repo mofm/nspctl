@@ -69,13 +69,16 @@ class Daemon(object):
         procs = []
 
         for p in pids():
-            _proc = Process(p)
-            _cmdline = _proc.cmdline()
-            if self.processName in _cmdline:
-                # sudo forks the given command,
-                # so we need to ignore parent sudo process.
-                if p != os.getpid() and "sudo" not in _cmdline:
-                    procs.append(p)
+            try:
+                _proc = Process(p)
+                _cmdline = _proc.cmdline()
+                if self.processName in _cmdline:
+                    # sudo forks the given command,
+                    # so we need to ignore parent sudo process.
+                    if p != os.getpid() and "sudo" not in _cmdline:
+                        procs.append(p)
+            except FileNotFoundError:
+                continue
 
         return procs
 
