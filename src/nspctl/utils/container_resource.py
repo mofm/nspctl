@@ -2,9 +2,11 @@ import logging
 import os
 import pipes
 import functools
+from contextlib import ExitStack
 
-from .cmd import run_cmd, popen
 from .args import clean_kwargs
+from ..lib.namespace import all_ns
+from .cmd import run_cmd, popen
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +77,7 @@ def cont_run(
         to_keep = keep_env
 
     if exec_driver == "nsenter":
-        full_cmd = "nsenter --target {} --mount --uts --ipc --net --pid -- ".format(pid)
+        full_cmd = ""
         if keep_env is not True:
             full_cmd += "env -i "
             if "PATH" not in to_keep:
@@ -89,13 +91,16 @@ def cont_run(
         )
         full_cmd += " {}".format(cmd)
 
-    proc = run_cmd(
-        full_cmd,
-        is_shell=is_shell,
-        cwd=None
-    )
+    try:
+        with ExitStack() as stack:
+            for ns in all_ns(pid):
+                stack.enter_context(ns)
 
-    return proc
+            ret = run_cmd(full_cmd, is_shell=is_shell)
+
+            return ret
+    except IOError as exc:
+        raise Exception("Unable to run command: {}".format(exc))
 
 
 @_validate
@@ -227,7 +232,14 @@ def login_shell(
     """
     if exec_driver == "nsenter":
         shell_cmd = "/bin/sh -l"
-        full_cmd = "{} env -i {}".format(_nsenter(pid), shell_cmd)
-        popen(full_cmd, is_shell=is_shell)
+        full_cmd = "env -i {} {}".format(PATH, shell_cmd)
+        try:
+            with ExitStack() as stack:
+                for ns in all_ns(pid):
+                    stack.enter_context(ns)
+
+                popen(full_cmd, is_shell=is_shell)
+        except IOError as exc:
+            raise Exception("Unable to login shell: {}".format(exc))
     else:
         raise Exception("no valid exec_driver")

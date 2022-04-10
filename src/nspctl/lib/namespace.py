@@ -4,8 +4,6 @@ import ctypes.util
 import errno
 import os
 from pathlib import Path
-from contextlib import ExitStack
-
 
 logger = logging.getLogger(__name__)
 
@@ -96,23 +94,13 @@ def _is_usable_namespace(target, ns_type):
     return True
 
 
-def all_namespaces(target, command=None):
+def all_ns(target):
     """
     Enter all the namespaces
     """
-    if not command:
-        command = ["/bin/sh"]
+    namespaces = []
+    for ns in NAMESPACES:
+        if _is_usable_namespace(target, ns):
+            namespaces.append(NsEnter(target, ns))
 
-    try:
-        with ExitStack() as stack:
-            namespaces = []
-            for ns in NAMESPACES:
-                if _is_usable_namespace(target, ns):
-                    namespaces.append(NsEnter(target, ns))
-
-            for ns in namespaces:
-                stack.enter_context(ns)
-
-            os.execlp(command[0], *command)
-    except IOError as exc:
-        raise Exception("Unable to access PID: {}".format(exc))
+    return namespaces

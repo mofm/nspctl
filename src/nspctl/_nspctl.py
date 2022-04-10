@@ -459,7 +459,7 @@ def _run(
         if preserve_state and orig_state == "stopped" and state(name) != "stopped":
             stop(name)
 
-    c_output = {"stdout": "stdout", "stderr": "stderr", "returncode": "returncode"}
+    c_output = {"result": "stdout", "error": "stderr", "status": "returncode"}
     if output is not None:
         output = c_output[output]
         return ret[output]
@@ -473,7 +473,7 @@ def con_pid(name):
     Returns the PID of a container
     """
     try:
-        return int(info(name).get("PID"))
+        return info(name).get("PID")
     except (TypeError, ValueError) as exc:
         raise exc(
             "Unable to get PID for container '{}': {}".format(name, exc)
@@ -512,7 +512,7 @@ def run_stdout(
     return _run(
         name,
         cmd,
-        output="stdout",
+        output="result",
         is_shell=is_shell,
         preserve_state=preserve_state,
         keep_env=keep_env,
@@ -532,7 +532,7 @@ def run_stderr(
     return _run(
         name,
         cmd,
-        output="stderr",
+        output="error",
         is_shell=is_shell,
         preserve_state=preserve_state,
         keep_env=keep_env,
@@ -552,7 +552,7 @@ def retcode(
     return _run(
         name,
         cmd,
-        output="returncode",
+        output="status",
         is_shell=is_shell,
         preserve_state=preserve_state,
         keep_env=keep_env,
