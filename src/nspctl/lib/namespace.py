@@ -31,8 +31,6 @@ class NsEnter(object):
             self.target_fd = Path(pid).open()
 
         self.target_fileno = self.target_fd.fileno()
-        self.parent_fd = self._nsfd("self", ns_type).open()
-        self.parent_fileno = self.parent_fd.fileno()
 
     __init__.__annotations__ = {'pid': str, 'ns_type': str}
 
@@ -54,24 +52,15 @@ class NsEnter(object):
         except:
             pass
 
-        if self.parent_fd is not None:
-            self.parent_fd.close()
-
     def __enter__(self):
         logger.debug("Entering {} namespace {}".format(self.ns_type, self.pid))
 
-        if self._libc.setns(self.target_fileno, 0) == -1:
+        if self._libc.setns(ctypes.c_int(self.target_fileno), ctypes.c_int(0)) != 0:
             exc = ctypes.get_errno()
-            self._close_files()
             raise OSError(exc, errno.errorcode[exc])
 
     def __exit__(self, type, value, tb):
         logger.debug("Leaving {} namespace {}".format(self.ns_type, self.pid))
-
-        if self._libc.setns(self.parent_fileno, 0) == -1:
-            exc = ctypes.get_errno()
-            self._close_files()
-            raise OSError(exc, errno.errorcode[exc])
 
         self._close_files()
 

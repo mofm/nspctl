@@ -2,6 +2,7 @@ import logging
 import os
 import pipes
 import functools
+import errno
 from contextlib import ExitStack
 
 from .args import clean_kwargs
@@ -60,6 +61,8 @@ def cont_run(
     exec_driver=None,
     is_shell=None,
     keep_env=None,
+    uid=None,
+    gid=None,
 ):
     """
     Common logic function for running containers
@@ -91,16 +94,22 @@ def cont_run(
         )
         full_cmd += " {}".format(cmd)
 
-    try:
-        with ExitStack() as stack:
-            for ns in all_ns(pid):
-                stack.enter_context(ns)
+        try:
+            with ExitStack() as stack:
+                for ns in all_ns(pid):
+                    stack.enter_context(ns)
 
-            ret = run_cmd(full_cmd, is_shell=is_shell)
+                os.setuid(uid)
+                os.setgid(gid)
+                os.setgroups([0])
+                ret = run_cmd(full_cmd, is_shell=is_shell)
 
-            return ret
-    except IOError as exc:
-        raise Exception("Unable to run command: {}".format(exc))
+                return ret
+        except OSError as exc:
+            if exc.errno != errno.EPERM:
+                raise Exception("Unable to run command: {}".format(exc))
+    else:
+        raise Exception("no valid exec_driver")
 
 
 @_validate
@@ -188,44 +197,13 @@ def cont_cpt(
 
 
 @_validate
-def con_init(
-        pid,
-        state,
-        container_type=None,
-        exec_driver=None,
-        is_shell=None,
-        keep_env=None,
-):
-    """
-    Detect container init systems
-    """
-    if state != "running":
-        raise Exception("Container is not running")
-
-    cmd = "stat /run/systemd/system"
-
-    if (
-        cont_run(
-            pid,
-            cmd,
-            container_type=container_type,
-            exec_driver=exec_driver,
-            is_shell=is_shell,
-            keep_env=keep_env
-        )["returncode"]
-        == 0
-    ):
-        return True
-    else:
-        return False
-
-
-@_validate
 def login_shell(
         pid,
         container_type=None,
         exec_driver=None,
         is_shell=None,
+        uid=None,
+        gid=None,
 ):
     """
     Common login shell function
@@ -238,8 +216,13 @@ def login_shell(
                 for ns in all_ns(pid):
                     stack.enter_context(ns)
 
+                os.setuid(uid)
+                os.setgid(gid)
+                os.setgroups([0])
                 popen(full_cmd, is_shell=is_shell)
-        except IOError as exc:
-            raise Exception("Unable to login shell: {}".format(exc))
+
+        except OSError as exc:
+            if exc.errno != errno.EPERM:
+                raise Exception("Unable to login shell: {}".format(exc))
     else:
         raise Exception("no valid exec_driver")

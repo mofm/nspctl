@@ -9,7 +9,7 @@ import tempfile
 from .utils.systemd import systemd_version
 from .utils.cmd import run_cmd, popen
 from .utils.args import invalid_kwargs, clean_kwargs
-from .utils.container_resource import cont_run, cont_cpt, con_init, login_shell
+from .utils.container_resource import cont_run, cont_cpt, login_shell
 from .utils.path import which
 from .lib.functools import alias_function
 from .utils.user import get_uid
@@ -342,22 +342,22 @@ def _ensure_systemd(version):
             )
 
 
-@_ensure_exists
 def _ensure_consystemd(name):
     """
     Detect container init systems:
     systemd or other init systems
     """
-    orig_state = state(name)
-    pid = con_pid(name)
-    return con_init(
-        pid,
-        state=orig_state,
-        container_type=__virtualname__,
-        exec_driver=EXEC_DRIVER,
-        is_shell=True,
-        keep_env=True,
-    )
+    if state(name) != "running":
+        raise Exception("Container is not running")
+
+    init_path = os.path.join(_root(name), "sbin/init")
+    try:
+        if os.readlink(init_path) == "/lib/systemd/systemd":
+            return True
+        else:
+            return False
+    except OSError as exc:
+        raise Exception("Container {} init is not available: {}".format(name, exc))
 
 
 def list_all():
@@ -443,7 +443,9 @@ def _run(
     """
     orig_state = state(name)
     pid = con_pid(name)
-    exc = None
+    # namespaces default uid and gid : 0
+    uid = 0
+    gid = 0
     try:
         ret = cont_run(
             pid,
@@ -451,7 +453,9 @@ def _run(
             container_type=__virtualname__,
             exec_driver=EXEC_DRIVER,
             is_shell=is_shell,
-            keep_env=keep_env
+            keep_env=keep_env,
+            uid=uid,
+            gid=gid,
         )
     finally:
         # Make sure we stop the container if necessary, even if an exception
@@ -809,11 +813,16 @@ def shell(name):
         ret = popen(cmd, is_shell=True)
     else:
         pid = con_pid(name)
+        # namespaces defult uid and gid: 0
+        uid = 0
+        gid = 0
         ret = login_shell(
             pid,
             container_type=__virtualname__,
             exec_driver=EXEC_DRIVER,
             is_shell=True,
+            uid=uid,
+            gid=gid,
         )
     return True
 
