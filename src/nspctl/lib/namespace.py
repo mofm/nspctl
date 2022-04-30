@@ -55,7 +55,7 @@ class NsEnter(object):
     def __enter__(self):
         logger.debug("Entering {} namespace {}".format(self.ns_type, self.pid))
 
-        if self._libc.setns(ctypes.c_int(self.target_fileno), ctypes.c_int(0)) != 0:
+        if self._libc.setns(ctypes.c_int(self.target_fileno), ctypes.c_int(0)) == -1:
             exc = ctypes.get_errno()
             raise OSError(exc, errno.errorcode[exc])
 

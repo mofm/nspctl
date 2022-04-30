@@ -679,7 +679,8 @@ def stop(name, kill=False):
 
     # command exit codes:
     # terminate -> 143, kill -> 137
-    if ret["returncode"] not in (0, 143):
+    # signal exit codes in namespaces, -9 , -15
+    if ret["returncode"] not in (0, -15):
         return False
 
     return True
@@ -742,7 +743,8 @@ def reboot(name):
 
     # command exit codes:
     # terminate -> 143, kill -> 137
-    if ret["returncode"] not in (0, 143):
+    # signal exit codes in namespaces, -9 , -15
+    if ret["returncode"] not in (0, -15):
         return False
 
     return True
